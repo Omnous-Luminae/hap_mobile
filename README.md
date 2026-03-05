@@ -49,7 +49,7 @@
 |-----------|---------------|
 | OS | Windows 10/11 64 bits, macOS 12+, ou Linux Ubuntu 20.04+ |
 | RAM | 8 Go (16 Go recommandés) |
-| Espace disque | 10 Go libres minimum (Flutter SDK + Android Studio) |
+| Espace disque | 10 Go libres minimum (Flutter SDK + outils de build Android) |
 | Processeur | x86_64, Intel ou AMD |
 
 ### Logiciels à installer
@@ -58,11 +58,10 @@
 |----------|---------|-------------|------|
 | Flutter SDK | 3.19+ (stable) | Framework mobile | https://flutter.dev/docs/get-started/install |
 | Dart SDK | Inclus dans Flutter | Langage de programmation | — |
-| Android Studio | Hedgehog 2023.1+ | IDE + émulateur Android | https://developer.android.com/studio |
 | VS Code (optionnel) | Dernière version | Éditeur alternatif | https://code.visualstudio.com |
 | Git | 2.40+ | Gestion de version | https://git-scm.com |
 | XAMPP | 8.2+ | Serveur local PHP/MySQL | https://www.apachefriends.org/fr |
-| JDK | 17 (LTS) | Requis pour Android Studio | https://adoptium.net |
+| JDK | 17 (LTS) | Requis pour les builds Android | https://adoptium.net |
 
 ---
 
@@ -103,27 +102,10 @@ Résultat attendu (tous les éléments en ✓ vert) :
 ```
 [✓] Flutter (Channel stable, 3.x.x)
 [✓] Android toolchain - develop for Android devices
-[✓] Android Studio (version 2023.x)
+[✓] Outils Android correctement installes
 [✓] Connected device (1 available)
 [✓] Network resources
 ```
-
-### 3.4 Installation d'Android Studio
-
-1. Télécharger et installer Android Studio
-2. Au premier démarrage, suivre l'assistant de configuration (Android SDK sera téléchargé automatiquement)
-3. Installer les plugins Flutter et Dart :
-   - `File → Settings → Plugins → Marketplace`
-   - Rechercher **Flutter** → Installer (Dart s'installera automatiquement)
-
-### 3.5 Configuration d'un émulateur Android
-
-1. Dans Android Studio : `Tools → Device Manager → Create Device`
-2. Choisir un appareil : **Pixel 6** (recommandé)
-3. Choisir une image système : **API 33 (Android 13)** ou supérieur
-4. Valider et démarrer l'émulateur
-
-> 💡 Il est également possible de tester sur un appareil physique Android en activant le **Mode développeur** et le **Débogage USB**.
 
 ### 3.6 Création du projet Flutter
 
@@ -996,7 +978,7 @@ flutter pub get
 # 3. Démarrer XAMPP (Apache + MySQL)
 #    → Vérifier que le projet HAP web est dans C:\xampp\htdocs\HAP\
 
-# 4. Lancer l'émulateur Android depuis Android Studio ou via :
+# 4. Lancer l'emulateur Android via :
 flutter emulators --launch <nom_emulateur>
 
 # 5. Lancer l'application
