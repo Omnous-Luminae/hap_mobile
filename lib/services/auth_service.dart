@@ -118,13 +118,29 @@ class AuthService {
 
       if (data['success'] == true) {
         final user = User.fromJson(data['user'] as Map<String, dynamic>);
-        // Met à jour le cache local
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString(_userKey, jsonEncode(user.toJson()));
+        await _saveUser(user);
         return user;
       }
     } catch (_) {}
     return null;
+  }
+
+  /// Met à jour le profil connecté via l'API.
+  ///
+  /// Retourne le [User] mis à jour, ou null si l'opération échoue.
+  static Future<User?> updateProfile(Map<String, dynamic> fields) async {
+    final data = await ApiService.post(
+      ApiConfig.updateProfile,
+      fields,
+    ) as Map<String, dynamic>;
+
+    if (data['success'] == true) {
+      final user = User.fromJson(data['user'] as Map<String, dynamic>);
+      await _saveUser(user);
+      return user;
+    }
+
+    throw Exception(data['message'] ?? 'Mise à jour impossible.');
   }
 
   // ── Session ─────────────────────────────────────────────────────────────────
@@ -143,6 +159,11 @@ class AuthService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_tokenKey, token);
     await prefs.setString(_userKey, jsonEncode(user));
+  }
+
+  static Future<void> _saveUser(User user) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_userKey, jsonEncode(user.toJson()));
   }
 
   /// Efface le token et les données utilisateur du stockage local.

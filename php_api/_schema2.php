@@ -8,7 +8,7 @@ echo json_encode($rows);
 $reviews = $pdo->query("SELECT * FROM reviews LIMIT 3")->fetchAll(PDO::FETCH_ASSOC);
 echo "\n" . json_encode($reviews);
 
-// Check reservations for bien 1 
+// Check reservations for bien 1
 $res = $pdo->query("SELECT * FROM reservation WHERE id_biens = 1")->fetchAll(PDO::FETCH_ASSOC);
 echo "\nReservations for bien 1: " . json_encode($res);
 

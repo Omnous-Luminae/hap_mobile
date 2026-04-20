@@ -15,9 +15,11 @@ import 'package:shimmer/shimmer.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../models/bien.dart';
+import '../../config/api_config.dart';
 import '../../models/filter_options.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/bien_service.dart';
+import '../../services/notification_service.dart';
 import '../../widgets/bien_card.dart';
 import '../../widgets/filter_bottom_sheet.dart';
 import '../../widgets/search_bar_widget.dart';
@@ -44,12 +46,17 @@ class _HomeScreenState extends State<HomeScreen> {
   bool             _isLoading   = false;
   bool             _isLoadingMore = false;
   String?          _error;
+  List<Map<String, dynamic>> _searchSuggestions = [];
+  bool _isLoadingSuggestions = false;
+  String _lastSuggestionQuery = '';
+  int _unreadNotifications = 0;
 
   final ScrollController _scrollCtrl = ScrollController();
 
   @override
   void initState() {
     super.initState();
+    _loadUnreadNotifications();
     _loadBiens(reset: true);
     _scrollCtrl.addListener(_onScroll);
   }
@@ -124,6 +131,50 @@ class _HomeScreenState extends State<HomeScreen> {
         clearSearch: query.isEmpty,
       );
     });
+    _loadSuggestions(query);
+    _loadBiens(reset: true);
+  }
+
+  Future<void> _loadSuggestions(String query) async {
+    final trimmed = query.trim();
+    if (trimmed.length < 2) {
+      if (!mounted) return;
+      setState(() {
+        _searchSuggestions = [];
+        _isLoadingSuggestions = false;
+        _lastSuggestionQuery = trimmed;
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoadingSuggestions = true;
+      _lastSuggestionQuery = trimmed;
+    });
+
+    try {
+      final suggestions = await BienService.searchSuggestions(trimmed);
+      if (!mounted || _lastSuggestionQuery != trimmed) return;
+      setState(() {
+        _searchSuggestions = suggestions;
+        _isLoadingSuggestions = false;
+      });
+    } catch (_) {
+      if (!mounted || _lastSuggestionQuery != trimmed) return;
+      setState(() {
+        _searchSuggestions = [];
+        _isLoadingSuggestions = false;
+      });
+    }
+  }
+
+  void _selectSuggestion(Map<String, dynamic> suggestion) {
+    final name = suggestion['nom_biens'] as String? ?? '';
+    setState(() {
+      _filters = _filters.copyWith(search: name, clearSearch: false);
+      _searchSuggestions = [];
+      _lastSuggestionQuery = name;
+    });
     _loadBiens(reset: true);
   }
 
@@ -134,6 +185,12 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() => _filters = updated);
       _loadBiens(reset: true);
     });
+  }
+
+  Future<void> _loadUnreadNotifications() async {
+    final count = await NotificationService.getUnreadCount();
+    if (!mounted) return;
+    setState(() => _unreadNotifications = count);
   }
 
   @override
@@ -156,6 +213,9 @@ class _HomeScreenState extends State<HomeScreen> {
               onSearch: _onSearch,
               onFilterTap: _openFilters,
             ),
+
+            if (_filters.search != null && _filters.search!.trim().length >= 2)
+              _buildSuggestionPanel(),
 
             // ── Contenu principal ──────────────────────────────────────
             Expanded(child: _buildBody()),
@@ -195,6 +255,91 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSuggestionPanel() {
+    if (_isLoadingSuggestions && _searchSuggestions.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: SizedBox(
+            height: 20,
+            width: 20,
+            child: CircularProgressIndicator(strokeWidth: 2, color: _accent),
+          ),
+        ),
+      );
+    }
+
+    if (_searchSuggestions.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white10),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(40),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxHeight: 220),
+        child: ListView.separated(
+          shrinkWrap: true,
+          padding: EdgeInsets.zero,
+          itemCount: _searchSuggestions.length,
+          separatorBuilder: (_, __) => const Divider(height: 1, color: Colors.white10),
+          itemBuilder: (context, index) {
+            final item = _searchSuggestions[index];
+            final photo = ApiConfig.photoUrl(item['photo'] as String?);
+            final nom = item['nom_biens'] as String? ?? '';
+            final commune = item['nom_commune'] as String?;
+            return ListTile(
+              dense: true,
+              visualDensity: VisualDensity.compact,
+              leading: ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: SizedBox(
+                  width: 42,
+                  height: 42,
+                  child: photo.isNotEmpty
+                      ? Image.network(photo, fit: BoxFit.cover)
+                      : Container(
+                          color: const Color(0xFF0f3460),
+                          child: const Icon(Icons.home_outlined, color: Colors.white54, size: 18),
+                        ),
+                ),
+              ),
+              title: Text(
+                nom,
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              subtitle: commune != null
+                  ? Text(
+                      commune,
+                      style: const TextStyle(color: Colors.white54, fontSize: 11),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    )
+                  : null,
+              trailing: const Icon(Icons.north_west, color: Colors.white38, size: 16),
+              onTap: () => _selectSuggestion(item),
+            );
+          },
         ),
       ),
     );
@@ -240,9 +385,36 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       actions: [
         IconButton(
-          icon: const Icon(Icons.notifications_outlined, color: Colors.white70),
+          icon: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              const Icon(Icons.notifications_outlined, color: Colors.white70),
+              if (_unreadNotifications > 0)
+                Positioned(
+                  right: -2,
+                  top: -2,
+                  child: Container(
+                    width: 14,
+                    height: 14,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFe94560),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(
+                        _unreadNotifications > 9 ? '9+' : '$_unreadNotifications',
+                        style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
           tooltip: 'Notifications',
-          onPressed: () {}, // Placeholder
+          onPressed: () async {
+            await context.push('/notifications');
+            await _loadUnreadNotifications();
+          },
         ),
       ],
     );

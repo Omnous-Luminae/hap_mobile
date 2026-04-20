@@ -88,4 +88,22 @@ class BienService {
       return [];
     }
   }
+
+  /// Retourne des suggestions de biens pour l'autocomplétion.
+  static Future<List<Map<String, dynamic>>> searchSuggestions(String query) async {
+    final trimmed = query.trim();
+    if (trimmed.length < 2) return [];
+
+    final response = await ApiService.get(
+      ApiConfig.searchBiens,
+      params: {'q': trimmed},
+      includeAuth: false,
+      clearSessionOn401: false,
+    ) as Map<String, dynamic>;
+
+    final raw = (response['data'] as List<dynamic>?) ?? const [];
+    return raw
+        .map((item) => Map<String, dynamic>.from(item as Map))
+        .toList();
+  }
 }

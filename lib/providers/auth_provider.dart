@@ -55,7 +55,7 @@ class AuthProvider extends ChangeNotifier {
       final loggedIn = await AuthService.isLoggedIn();
       if (loggedIn) {
         _token           = await AuthService.getToken();
-        _currentUser     = await AuthService.getCurrentUser();
+        _currentUser     = await AuthService.getCurrentUser() ?? await AuthService.fetchMe();
         _isAuthenticated = true;
       } else {
         _isAuthenticated = false;
@@ -64,6 +64,31 @@ class AuthProvider extends ChangeNotifier {
       }
     } catch (e) {
       _isAuthenticated = false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Met à jour le profil du locataire côté API puis recharge l'état local.
+  Future<bool> updateProfile(Map<String, dynamic> fields) async {
+    _setLoading(true);
+    _error = null;
+    try {
+      final updatedUser = await AuthService.updateProfile(fields);
+      if (updatedUser == null) {
+        _error = 'Impossible de mettre à jour le profil.';
+        notifyListeners();
+        return false;
+      }
+
+      _currentUser = updatedUser;
+      _isAuthenticated = true;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      return false;
     } finally {
       _setLoading(false);
     }

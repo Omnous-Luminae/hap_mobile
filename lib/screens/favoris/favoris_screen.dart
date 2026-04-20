@@ -13,6 +13,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../config/api_config.dart';
+import '../../services/app_preferences_service.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/favoris_service.dart';
 
@@ -31,6 +32,7 @@ class _FavorisScreenState extends State<FavorisScreen> {
   List<Map<String, dynamic>> _favoris = [];
   bool _loading = true;
   String? _error;
+  bool _compactLayout = false;
 
   // IDs en cours de suppression (pour désactiver le bouton pendant l'appel)
   final Set<int> _removing = {};
@@ -38,7 +40,14 @@ class _FavorisScreenState extends State<FavorisScreen> {
   @override
   void initState() {
     super.initState();
+    _loadPreferences();
     _load();
+  }
+
+  Future<void> _loadPreferences() async {
+    final compactLayout = await AppPreferencesService.getCompactLayout();
+    if (!mounted) return;
+    setState(() => _compactLayout = compactLayout);
   }
 
   Future<void> _load() async {
@@ -49,7 +58,7 @@ class _FavorisScreenState extends State<FavorisScreen> {
         setState(() { _error = 'Connectez-vous pour voir vos favoris.'; _loading = false; });
         return;
       }
-      final data = await FavorisService.getFavoris(token: token);
+      final data = await FavorisService.getFavoris();
       setState(() { _favoris = data; _loading = false; });
     } catch (e) {
       setState(() {
@@ -64,7 +73,7 @@ class _FavorisScreenState extends State<FavorisScreen> {
     try {
       final token = context.read<AuthProvider>().token;
       if (token == null) return;
-      await FavorisService.retirerFavori(idBiens: idBiens, token: token);
+      await FavorisService.retirerFavori(idBiens: idBiens);
       setState(() => _favoris.removeWhere((f) => f['id_biens'] == idBiens));
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -89,92 +98,70 @@ class _FavorisScreenState extends State<FavorisScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _bg,
-      appBar: AppBar(
-        backgroundColor: _surface,
-        title: const Text('Mes favoris',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white70),
-            onPressed: _load,
-          ),
-        ],
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [_bg, Color(0xFF101828)],
+        ),
       ),
-      body: _buildBody(),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: _surface,
+          elevation: 0,
+          title: const Row(
+            children: [
+              Icon(Icons.favorite, color: _accent, size: 20),
+              SizedBox(width: 8),
+              Text(
+                'Mes favoris',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          centerTitle: false,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh, color: Colors.white70),
+              tooltip: 'Actualiser',
+              onPressed: _load,
+            ),
+          ],
+        ),
+        body: _buildBody(),
+      ),
     );
   }
 
   Widget _buildBody() {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator(color: Color(0xFFe94560)));
+      return const Center(
+        child: CircularProgressIndicator(color: _accent),
+      );
     }
 
     if (_error != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.wifi_off, color: Colors.white38, size: 64),
-              const SizedBox(height: 16),
-              Text(_error!,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.white54, fontSize: 13)),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _load,
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFe94560),
-                    foregroundColor: Colors.white),
-                child: const Text('Réessayer'),
-              ),
-            ],
-          ),
-        ),
+      return _SectionShell(
+        icon: Icons.wifi_off,
+        title: 'Impossible de charger vos favoris',
+        message: _error!,
+        actionLabel: 'Réessayer',
+        onAction: _load,
       );
     }
 
     if (_favoris.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(40),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text('❤️', style: TextStyle(fontSize: 72)),
-              const SizedBox(height: 20),
-              const Text('Aucun favori',
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              const Text(
-                'Appuyez sur le cœur d\'un bien pour l\'ajouter ici.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white54, fontSize: 14),
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton.icon(
-                onPressed: () => context.go('/home'),
-                icon: const Icon(Icons.search),
-                label: const Text('Explorer les biens'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFe94560),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 24, vertical: 14),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-            ],
-          ),
-        ),
+      return _SectionShell(
+        icon: Icons.favorite_border,
+        title: 'Aucun favori pour le moment',
+        message: 'Ajoutez un bien à vos favoris pour le retrouver plus vite.',
+        actionLabel: 'Explorer les biens',
+        onAction: () => context.go('/home'),
       );
     }
 
@@ -182,25 +169,210 @@ class _FavorisScreenState extends State<FavorisScreen> {
       onRefresh: _load,
       color: const Color(0xFFe94560),
       backgroundColor: const Color(0xFF16213e),
-      child: GridView.builder(
-        padding: const EdgeInsets.all(16),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: 0.72,
-        ),
-        itemCount: _favoris.length,
-        itemBuilder: (_, i) {
-          final f = _favoris[i];
-          final id = f['id_biens'] as int;
-          return _FavoriCard(
-            favori: f,
-            isRemoving: _removing.contains(id),
-            onTap: () => context.push('/bien/$id'),
-            onRetirer: () => _retirer(id),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          final crossAxisCount = width < 380
+              ? 1
+              : width < 720
+                  ? 2
+                  : 3;
+          final childAspectRatio = crossAxisCount == 1
+              ? (_compactLayout ? 0.74 : 0.78)
+              : (_compactLayout ? 0.76 : 0.80);
+
+          return CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    width >= 600 ? 24 : 16,
+                    16,
+                    width >= 600 ? 24 : 16,
+                    12,
+                  ),
+                  child: _SummaryCard(count: _favoris.length),
+                ),
+              ),
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(
+                  width >= 600 ? 24 : 16,
+                  0,
+                  width >= 600 ? 24 : 16,
+                  16,
+                ),
+                sliver: SliverGrid(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: crossAxisCount,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    childAspectRatio: childAspectRatio,
+                  ),
+                  delegate: SliverChildBuilderDelegate(
+                    (context, i) {
+                      final f = _favoris[i];
+                      final id = f['id_biens'] as int;
+                      return _FavoriCard(
+                        favori: f,
+                        isRemoving: _removing.contains(id),
+                        onTap: () => context.push('/bien/$id'),
+                        onRetirer: () => _retirer(id),
+                      );
+                    },
+                    childCount: _favoris.length,
+                  ),
+                ),
+              ),
+            ],
           );
         },
+      ),
+    );
+  }
+}
+
+class _SectionShell extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String message;
+  final String actionLabel;
+  final VoidCallback onAction;
+
+  const _SectionShell({
+    required this.icon,
+    required this.title,
+    required this.message,
+    required this.actionLabel,
+    required this.onAction,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 460),
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: _FavorisScreenState._surface,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: Colors.white10),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha(50),
+                blurRadius: 24,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 88,
+                height: 88,
+                decoration: BoxDecoration(
+                  color: Colors.white.withAlpha(10),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: Colors.white10),
+                ),
+                child: Icon(icon, color: _FavorisScreenState._accent, size: 42),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white54,
+                  fontSize: 14,
+                  height: 1.45,
+                ),
+              ),
+              const SizedBox(height: 22),
+              FilledButton(
+                onPressed: onAction,
+                style: FilledButton.styleFrom(
+                  backgroundColor: _FavorisScreenState._accent,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                child: Text(actionLabel),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SummaryCard extends StatelessWidget {
+  final int count;
+
+  const _SummaryCard({required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFF16213e),
+            const Color(0xFF16213e).withAlpha(220),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: const Color(0xFFe94560).withAlpha(40),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Icon(Icons.favorite, color: _FavorisScreenState._accent),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$count favori${count > 1 ? 's' : ''}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Glissez vers le bas pour actualiser la liste.',
+                  style: TextStyle(color: Colors.white54, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

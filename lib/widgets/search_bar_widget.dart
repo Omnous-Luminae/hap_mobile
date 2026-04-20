@@ -53,6 +53,18 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
   }
 
   @override
+  void didUpdateWidget(covariant SearchBarWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialValue != widget.initialValue &&
+        widget.initialValue != _ctrl.text) {
+      _ctrl.value = TextEditingValue(
+        text: widget.initialValue,
+        selection: TextSelection.collapsed(offset: widget.initialValue.length),
+      );
+    }
+  }
+
+  @override
   void dispose() {
     _debounce?.cancel();
     _ctrl.dispose();
@@ -75,56 +87,87 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
       child: Row(
         children: [
-          // ── Champ de recherche ─────────────────────────────────────────
           Expanded(
             child: Container(
-              height: 48,
+              height: 52,
               decoration: BoxDecoration(
-                color: _surface,
-                borderRadius: BorderRadius.circular(12),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    _surface,
+                    const Color(0xFF101828),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.white10),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(40),
+                    blurRadius: 18,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
               ),
               child: TextField(
                 controller: _ctrl,
                 onChanged: _onTextChanged,
                 style: const TextStyle(color: Colors.white, fontSize: 14),
                 decoration: InputDecoration(
-                  hintText: 'Rechercher un bien…',
+                  hintText: 'Rechercher un bien, une ville…',
                   hintStyle: const TextStyle(color: Colors.white38, fontSize: 14),
                   prefixIcon: const Icon(
                     Icons.search,
                     color: Colors.white38,
                     size: 20,
                   ),
-                  suffixIcon: _ctrl.text.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear,
-                              color: Colors.white38, size: 18),
-                          onPressed: _clearSearch,
-                        )
-                      : null,
+                  suffixIcon: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 180),
+                    child: _ctrl.text.isNotEmpty
+                        ? IconButton(
+                            key: const ValueKey('clear-search'),
+                            icon: const Icon(Icons.close,
+                                color: Colors.white54, size: 18),
+                            onPressed: _clearSearch,
+                          )
+                        : const SizedBox.shrink(key: ValueKey('empty-search')),
+                  ),
                   border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 16),
                 ),
               ),
             ),
           ),
-          const SizedBox(width: 8),
-
-          // ── Bouton filtres ─────────────────────────────────────────────
+          const SizedBox(width: 10),
           GestureDetector(
             onTap: widget.onFilterTap,
             child: Stack(
               clipBehavior: Clip.none,
               children: [
                 Container(
-                  width: 48,
-                  height: 48,
+                  width: 52,
+                  height: 52,
                   decoration: BoxDecoration(
-                    color: widget.activeFiltersCount > 0 ? _accent : _surface,
-                    borderRadius: BorderRadius.circular(12),
+                    gradient: widget.activeFiltersCount > 0
+                        ? const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [_accent, Color(0xFFff6b81)],
+                          )
+                        : null,
+                    color: widget.activeFiltersCount > 0 ? null : _surface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withAlpha(40),
+                        blurRadius: 18,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
                   ),
                   child: Icon(
                     Icons.tune,
@@ -134,8 +177,6 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
                     size: 22,
                   ),
                 ),
-
-                // Badge rouge avec le nombre de filtres actifs
                 if (widget.activeFiltersCount > 0)
                   Positioned(
                     top: -4,

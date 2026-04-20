@@ -82,13 +82,21 @@ class _BienCardState extends State<BienCard>
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: _surface,
-          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              _surface,
+              const Color(0xFF101828),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.white10),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withAlpha(60),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
+              color: Colors.black.withAlpha(70),
+              blurRadius: 18,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
@@ -100,9 +108,27 @@ class _BienCardState extends State<BienCard>
               children: [
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(16),
+                    top: Radius.circular(18),
                   ),
                   child: _buildImage(bien),
+                ),
+
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withAlpha(120),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
 
                 // Badge type de bien
@@ -116,6 +142,7 @@ class _BienCardState extends State<BienCard>
                       decoration: BoxDecoration(
                         color: _bg.withAlpha(204),
                         borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.white10),
                       ),
                       child: Text(
                         bien.designationTypeBien!,
@@ -140,8 +167,9 @@ class _BienCardState extends State<BienCard>
                         width: 36,
                         height: 36,
                         decoration: BoxDecoration(
-                          color: _bg.withAlpha(180),
+                          color: Colors.black.withAlpha(160),
                           shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white10),
                         ),
                         child: Icon(
                           _isFavorite
@@ -159,7 +187,7 @@ class _BienCardState extends State<BienCard>
 
             // ── Infos ────────────────────────────────────────────────────
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -178,21 +206,31 @@ class _BienCardState extends State<BienCard>
 
                   // Commune
                   if (bien.nomCommune != null)
-                    Row(
-                      children: [
-                        const Text('📍 ', style: TextStyle(fontSize: 12)),
-                        Expanded(
-                          child: Text(
-                            bien.communeLabel,
-                            style: const TextStyle(
-                              color: Colors.white54,
-                              fontSize: 12,
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withAlpha(8),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(color: Colors.white10),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.location_on_outlined,
+                              size: 13, color: Colors.white54),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              bien.communeLabel,
+                              style: const TextStyle(
+                                color: Colors.white54,
+                                fontSize: 12,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   const SizedBox(height: 6),
 
@@ -292,13 +330,17 @@ class _BienCardState extends State<BienCard>
       color: const Color(0xFF0f3460),
       child: Center(
         child: loading
-            ? const CircularProgressIndicator(
-                color: Color(0xFFe94560),
-                strokeWidth: 2,
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  color: Color(0xFFe94560),
+                  strokeWidth: 2,
+                ),
               )
             : const Text(
                 '🏠',
-                style: TextStyle(fontSize: 56),
+                style: TextStyle(fontSize: 50),
               ),
       ),
     );

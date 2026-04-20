@@ -13,11 +13,10 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 
 import '../../config/api_config.dart';
 import '../../models/reservation.dart';
-import '../../providers/auth_provider.dart';
+import '../../services/app_preferences_service.dart';
 import '../../services/reservation_service.dart';
 
 class ReservationsScreen extends StatefulWidget {
@@ -33,11 +32,19 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
   static const Color _accent  = Color(0xFFe94560);
 
   late Future<List<Reservation>> _future;
+  bool _compactLayout = false;
 
   @override
   void initState() {
     super.initState();
+    _loadPreferences();
     _future = ReservationService.getMesReservations();
+  }
+
+  Future<void> _loadPreferences() async {
+    final compactLayout = await AppPreferencesService.getCompactLayout();
+    if (!mounted) return;
+    setState(() => _compactLayout = compactLayout);
   }
 
   void _refresh() => setState(() {
@@ -71,13 +78,9 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
 
     if (confirm != true || !mounted) return;
 
-    final token = context.read<AuthProvider>().token;
-    if (token == null) return;
-
     try {
       await ReservationService.cancelReservation(
         idReservation: r.idReservation,
-        token: token,
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -109,50 +112,116 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _bg,
-      appBar: AppBar(
-        backgroundColor: _surface,
-        title: const Text('Mes réservations',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white70),
-            onPressed: _refresh,
-          ),
-        ],
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [_bg, Color(0xFF101828)],
+        ),
       ),
-      body: FutureBuilder<List<Reservation>>(
-        future: _future,
-        builder: (context, snap) {
-          if (snap.connectionState == ConnectionState.waiting) {
-            return const Center(
-                child: CircularProgressIndicator(color: _accent));
-          }
-          if (snap.hasError) {
-            return _buildError(
-                snap.error.toString().replaceFirst('Exception: ', ''));
-          }
-          final list = snap.data ?? [];
-          if (list.isEmpty) return _buildEmpty();
-          return RefreshIndicator(
-            color: _accent,
-            onRefresh: () async => _refresh(),
-            child: ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: list.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (_, i) => _ReservationCard(
-                reservation: list[i],
-                onTap: () => context.push('/bien/${list[i].bien.idBiens}'),
-                onAnnuler: list[i].statut == StatutReservation.aVenir
-                    ? () => _annuler(list[i])
-                    : null,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: _surface,
+          elevation: 0,
+          title: const Row(
+            children: [
+              Icon(Icons.calendar_month, color: _accent, size: 20),
+              SizedBox(width: 8),
+              Text(
+                'Mes réservations',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
               ),
+            ],
+          ),
+          centerTitle: false,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh, color: Colors.white70),
+              tooltip: 'Actualiser',
+              onPressed: _refresh,
             ),
-          );
-        },
+          ],
+        ),
+        body: FutureBuilder<List<Reservation>>(
+          future: _future,
+          builder: (context, snap) {
+            if (snap.connectionState == ConnectionState.waiting) {
+              return const Center(
+                child: CircularProgressIndicator(color: _accent),
+              );
+            }
+            if (snap.hasError) {
+              return _buildError(
+                snap.error.toString().replaceFirst('Exception: ', ''),
+              );
+            }
+
+            final list = snap.data ?? [];
+            if (list.isEmpty) return _buildEmpty();
+
+            return LayoutBuilder(
+              builder: (context, constraints) {
+                final maxWidth = constraints.maxWidth > 760 ? 760.0 : constraints.maxWidth;
+                final compact = _compactLayout || constraints.maxWidth < 360;
+
+                return Align(
+                  alignment: Alignment.topCenter,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: maxWidth),
+                    child: RefreshIndicator(
+                      color: _accent,
+                      onRefresh: () async => _refresh(),
+                      child: CustomScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        slivers: [
+                          SliverToBoxAdapter(
+                            child: Padding(
+                              padding: EdgeInsets.fromLTRB(
+                                maxWidth >= 700 ? 24 : 16,
+                                16,
+                                maxWidth >= 700 ? 24 : 16,
+                                12,
+                              ),
+                              child: _SummaryCard(reservations: list, compact: compact),
+                            ),
+                          ),
+                          SliverPadding(
+                            padding: EdgeInsets.fromLTRB(
+                              maxWidth >= 700 ? 24 : 16,
+                              0,
+                              maxWidth >= 700 ? 24 : 16,
+                              16,
+                            ),
+                            sliver: SliverList(
+                              delegate: SliverChildBuilderDelegate(
+                                (context, i) => Padding(
+                                  padding: EdgeInsets.only(
+                                    bottom: i == list.length - 1 ? 0 : 12,
+                                  ),
+                                  child: _ReservationCard(
+                                    reservation: list[i],
+                                    compact: compact,
+                                    onTap: () => context.push('/bien/${list[i].bien.idBiens}'),
+                                    onAnnuler: list[i].statut == StatutReservation.aVenir
+                                        ? () => _annuler(list[i])
+                                        : null,
+                                  ),
+                                ),
+                                childCount: list.length,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }
@@ -217,15 +286,78 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
       );
 }
 
+class _SummaryCard extends StatelessWidget {
+  final List<Reservation> reservations;
+  final bool compact;
+
+  const _SummaryCard({required this.reservations, required this.compact});
+
+  @override
+  Widget build(BuildContext context) {
+    final upcoming = reservations.where((r) => r.statut == StatutReservation.aVenir).length;
+    final total = reservations.length;
+
+    return Container(
+      padding: EdgeInsets.all(compact ? 14 : 16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFF16213e),
+            const Color(0xFF16213e).withAlpha(220),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: compact ? 40 : 44,
+            height: compact ? 40 : 44,
+            decoration: BoxDecoration(
+              color: const Color(0xFFe94560).withAlpha(40),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Icon(Icons.calendar_month, color: Color(0xFFe94560)),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$total réservation${total > 1 ? 's' : ''}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '$upcoming à venir, le reste est déjà passé ou en cours.',
+                  style: const TextStyle(color: Colors.white54, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 // ── Carte réservation ──────────────────────────────────────────────────────
 
 class _ReservationCard extends StatelessWidget {
   final Reservation reservation;
+  final bool compact;
   final VoidCallback onTap;
   final VoidCallback? onAnnuler;
 
   const _ReservationCard({
     required this.reservation,
+    required this.compact,
     required this.onTap,
     this.onAnnuler,
   });
@@ -246,14 +378,21 @@ class _ReservationCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: _surface,
-          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              _surface,
+              const Color(0xFF101828),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(color: Colors.white10),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withAlpha(60),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+              blurRadius: 18,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
@@ -265,17 +404,35 @@ class _ReservationCard extends StatelessWidget {
               children: [
                 ClipRRect(
                   borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(16)),
+                      const BorderRadius.vertical(top: Radius.circular(18)),
                   child: SizedBox(
-                    height: 140,
+                    height: compact ? 136 : 148,
                     width: double.infinity,
                     child: r.bien.photo != null && r.bien.photo!.isNotEmpty
                         ? CachedNetworkImage(
                             imageUrl: ApiConfig.photoUrl(r.bien.photo),
                             fit: BoxFit.cover,
+                            placeholder: (_, __) => _fallbackPhoto(loading: true),
                             errorWidget: (_, __, ___) => _fallbackPhoto(),
                           )
                         : _fallbackPhoto(),
+                  ),
+                ),
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withAlpha(115),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
                 ),
                 Positioned(
@@ -288,7 +445,7 @@ class _ReservationCard extends StatelessWidget {
 
             // Infos
             Padding(
-              padding: const EdgeInsets.all(14),
+              padding: EdgeInsets.all(compact ? 12 : 14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -377,10 +534,20 @@ class _ReservationCard extends StatelessWidget {
     );
   }
 
-  Widget _fallbackPhoto() => Container(
+  Widget _fallbackPhoto({bool loading = false}) => Container(
         color: const Color(0xFF0d1020),
-        child:
-            const Center(child: Text('🏠', style: TextStyle(fontSize: 48))),
+        child: Center(
+          child: loading
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white54,
+                  ),
+                )
+              : const Text('🏠', style: TextStyle(fontSize: 48)),
+        ),
       );
 
   Widget _infoChip(IconData icon, String label) => Row(

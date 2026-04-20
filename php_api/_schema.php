@@ -3,9 +3,16 @@ require_once __DIR__ . '/config/db.php';
 $pdo = new PDO('mysql:host='.DB_HOST.';dbname='.DB_NAME.';charset=utf8', DB_USER, DB_PASS, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
 
 foreach (['reservation', 'semaine_indisponible', 'tarif', 'saison', 'biens', 'photos'] as $t) {
-    $cols = $pdo->query("DESCRIBE $t")->fetchAll(PDO::FETCH_ASSOC);
+    $allowed = ['reservation', 'semaine_indisponible', 'tarif', 'saison', 'biens', 'photos'];
+    if (!in_array($t, $allowed, true)) {
+        continue;
+    }
+
+    $cols = $pdo->query(sprintf('DESCRIBE `%s`', $t))->fetchAll(PDO::FETCH_ASSOC);
     echo "\n=== $t ===\n";
-    foreach ($cols as $c) echo "  {$c['Field']} {$c['Type']} {$c['Null']} {$c['Key']} default={$c['Default']}\n";
+    foreach ($cols as $c) {
+        echo "  {$c['Field']} {$c['Type']} {$c['Null']} {$c['Key']} default={$c['Default']}\n";
+    }
 }
 
 // Sample data

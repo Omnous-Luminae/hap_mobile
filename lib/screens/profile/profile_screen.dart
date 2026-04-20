@@ -1,9 +1,9 @@
 /// profile_screen.dart — Écran Profil complet HAP Mobile
 ///
 /// 3 onglets via TabBar :
-///   0 → Infos personnelles (lecture seule, édition nécessite endpoint PHP)
-///   1 → Historique réservations (appel get_mes_reservations.php)
-///   2 → Paramètres (déconnexion)
+///   0 → Infos personnelles
+///   1 → Historique réservations
+///   2 → Paramètres
 
 import 'dart:convert';
 
@@ -11,10 +11,14 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../config/api_config.dart';
+import '../../models/user.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/app_preferences_service.dart';
+import 'edit_profile_sheet.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -25,12 +29,10 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen>
     with SingleTickerProviderStateMixin {
-  // ── Couleurs HAP ──────────────────────────────────────────────────────────
-  static const Color _bg      = Color(0xFF1a1a2e);
-  static const Color _surface = Color(0xFF16213e);
-  static const Color _accent  = Color(0xFFe94560);
+  static const Color _bg = Color(0xFF1a1a2e);
+  static const Color _accent = Color(0xFFe94560);
 
-  late TabController _tabController;
+  late final TabController _tabController;
 
   @override
   void initState() {
@@ -48,41 +50,198 @@ class _ProfileScreenState extends State<ProfileScreen>
   Widget build(BuildContext context) {
     final user = context.watch<AuthProvider>().currentUser;
 
-    return Scaffold(
-      backgroundColor: _bg,
-      body: NestedScrollView(
-        headerSliverBuilder: (context, innerBoxIsScrolled) => [
-          SliverToBoxAdapter(
-            child: _ProfileHeader(user: user),
-          ),
-          SliverPersistentHeader(
-            pinned: true,
-            delegate: _TabBarDelegate(
-              TabBar(
-                controller: _tabController,
-                indicatorColor: _accent,
-                labelColor: _accent,
-                unselectedLabelColor: Colors.white38,
-                indicatorWeight: 2,
-                labelStyle: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [_bg, Color(0xFF0f1726)],
+        ),
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: NestedScrollView(
+          headerSliverBuilder: (context, innerBoxIsScrolled) => [
+            SliverToBoxAdapter(child: _ProfileHeader(user: user)),
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _TabBarDelegate(
+                TabBar(
+                  controller: _tabController,
+                  indicatorColor: _accent,
+                  indicatorWeight: 2,
+                  labelColor: Colors.white,
+                  unselectedLabelColor: Colors.white54,
+                  labelStyle: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  tabs: const [
+                    Tab(icon: Icon(Icons.person_outline, size: 18), text: 'Infos'),
+                    Tab(
+                      icon: Icon(Icons.calendar_month_outlined, size: 18),
+                      text: 'Réservations',
+                    ),
+                    Tab(icon: Icon(Icons.settings_outlined, size: 18), text: 'Paramètres'),
+                  ],
                 ),
-                tabs: const [
-                  Tab(icon: Icon(Icons.person_outline, size: 18), text: 'Infos'),
-                  Tab(icon: Icon(Icons.calendar_month_outlined, size: 18), text: 'Réservations'),
-                  Tab(icon: Icon(Icons.settings_outlined, size: 18), text: 'Paramètres'),
-                ],
               ),
             ),
+          ],
+          body: TabBarView(
+            controller: _tabController,
+            children: [
+              _InfosTab(user: user),
+              const _ReservationsTab(),
+              const _ParametresTab(),
+            ],
           ),
-        ],
-        body: TabBarView(
-          controller: _tabController,
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileHeader extends StatelessWidget {
+  final User? user;
+
+  static const Color _accent = Color(0xFFe94560);
+
+  const _ProfileHeader({required this.user});
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final isCompact = width < 360;
+    final firstName = user?.prenom ?? '';
+    final lastName = user?.nom ?? '';
+    final initials = '${firstName.isNotEmpty ? firstName[0] : ''}${lastName.isNotEmpty ? lastName[0] : ''}'.toUpperCase();
+    final fullName = user != null ? '$firstName $lastName'.trim() : 'Invité';
+    final email = user?.email;
+    final phone = user?.telephone;
+    final city = user?.nomCommune;
+    final cp = user?.cpCommune;
+
+    return Padding(
+      padding: EdgeInsets.only(
+        top: MediaQuery.of(context).padding.top + 16,
+        left: 16,
+        right: 16,
+        bottom: 18,
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              const Color(0xFF16213e),
+              const Color(0xFF111827),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(color: Colors.white10),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(60),
+              blurRadius: 24,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Column(
           children: [
-            _InfosTab(user: user),
-            _ReservationsTab(),
-            _ParametresTab(),
+            Container(
+              width: isCompact ? 76 : 88,
+              height: isCompact ? 76 : 88,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    _accent.withAlpha(220),
+                    const Color(0xFFff6b81),
+                  ],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: _accent.withAlpha(70),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Center(
+                child: Text(
+                  initials.isEmpty ? '?' : initials,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 30,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(height: isCompact ? 12 : 14),
+            Text(
+              fullName,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: isCompact ? 20 : 22,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 4),
+            if (email != null)
+              Text(
+                email,
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white54, fontSize: isCompact ? 12 : 13),
+              ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              alignment: WrapAlignment.center,
+              children: [
+                if (city != null)
+                  _ProfileChip(
+                    icon: Icons.location_city_outlined,
+                    label: '${cp ?? ''} $city'.trim(),
+                  ),
+                if (phone != null)
+                  _ProfileChip(
+                    icon: Icons.phone_outlined,
+                    label: phone,
+                  ),
+              ],
+            ),
+            if (user != null) ...[
+              const SizedBox(height: 14),
+              FilledButton.icon(
+                onPressed: () async {
+                  final updated = await showEditProfileSheet(context, user!);
+                  if (updated && context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Profil mis à jour.'),
+                        backgroundColor: Color(0xFF4CAF50),
+                      ),
+                    );
+                  }
+                },
+                icon: const Icon(Icons.edit_outlined),
+                label: const Text('Modifier le profil'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: _accent,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -90,100 +249,35 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// EN-TÊTE PROFIL
-// ══════════════════════════════════════════════════════════════════════════════
+class _ProfileChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
 
-class _ProfileHeader extends StatelessWidget {
-  final dynamic user;
-  static const Color _surface = Color(0xFF16213e);
-  static const Color _accent  = Color(0xFFe94560);
-
-  const _ProfileHeader({required this.user});
+  const _ProfileChip({required this.icon, required this.label});
 
   @override
   Widget build(BuildContext context) {
-    final initiales = user != null
-        ? '${(user.prenom as String).isNotEmpty ? user.prenom[0] : ''}${(user.nom as String).isNotEmpty ? user.nom[0] : ''}'.toUpperCase()
-        : '?';
-
     return Container(
-      color: _surface,
-      padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 16,
-        bottom: 24,
-        left: 24,
-        right: 24,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withAlpha(8),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white10),
       ),
-      child: Column(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Avatar initiales
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: _accent.withAlpha(40),
-              border: Border.all(color: _accent, width: 2),
-            ),
-            child: Center(
-              child: Text(
-                initiales,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // Nom complet
-          Text(
-            user != null ? '${user.prenom} ${user.nom}' : 'Invité',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 4),
-
-          // Email
-          if (user?.email != null)
-            Text(
-              user!.email as String,
-              style: const TextStyle(color: Colors.white54, fontSize: 13),
-            ),
-
-          // Commune
-          if (user?.nomCommune != null) ...[
-            const SizedBox(height: 4),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('📍 ', style: TextStyle(fontSize: 12)),
-                Text(
-                  '${user!.cpCommune ?? ''} ${user.nomCommune}'.trim(),
-                  style: const TextStyle(color: Colors.white38, fontSize: 12),
-                ),
-              ],
-            ),
-          ],
+          Icon(icon, size: 14, color: Colors.white70),
+          const SizedBox(width: 6),
+          Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12)),
         ],
       ),
     );
   }
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// ONGLET 1 — INFOS PERSONNELLES
-// ══════════════════════════════════════════════════════════════════════════════
-
 class _InfosTab extends StatelessWidget {
   final dynamic user;
-  static const Color _surface = Color(0xFF16213e);
 
   const _InfosTab({required this.user});
 
@@ -191,43 +285,61 @@ class _InfosTab extends StatelessWidget {
   Widget build(BuildContext context) {
     if (user == null) {
       return const Center(
-        child: Text(
-          'Connectez-vous pour voir vos informations.',
-          style: TextStyle(color: Colors.white54),
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Text(
+            'Connectez-vous pour voir vos informations.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white54),
+          ),
         ),
       );
     }
 
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       children: [
-        _SectionTitle(title: 'Identité'),
-        _InfoRow(icon: Icons.person_outline,    label: 'Prénom',     value: user.prenom as String),
-        _InfoRow(icon: Icons.person_outline,    label: 'Nom',        value: user.nom as String),
-        _InfoRow(icon: Icons.email_outlined,    label: 'Email',      value: user.email as String),
+        const _SectionTitle(title: 'Identité'),
+        _InfoRow(icon: Icons.person_outline, label: 'Prénom', value: user.prenom as String),
+        _InfoRow(icon: Icons.person_outline, label: 'Nom', value: user.nom as String),
+        _InfoRow(icon: Icons.email_outlined, label: 'Email', value: user.email as String),
         if (user.telephone != null)
-          _InfoRow(icon: Icons.phone_outlined,  label: 'Téléphone',  value: user.telephone as String),
+          _InfoRow(icon: Icons.phone_outlined, label: 'Téléphone', value: user.telephone as String),
         if (user.dateNaissance != null)
-          _InfoRow(icon: Icons.cake_outlined,   label: 'Naissance',  value: _formatDate(user.dateNaissance as String)),
-
+          _InfoRow(
+            icon: Icons.cake_outlined,
+            label: 'Naissance',
+            value: _formatDate(user.dateNaissance as String),
+          ),
         const SizedBox(height: 16),
-        _SectionTitle(title: 'Adresse'),
+        const _SectionTitle(title: 'Adresse'),
         if (user.rue != null)
-          _InfoRow(icon: Icons.home_outlined,   label: 'Rue',        value: user.rue as String),
+          _InfoRow(icon: Icons.home_outlined, label: 'Rue', value: user.rue as String),
         if (user.complement != null)
-          _InfoRow(icon: Icons.add_location_alt_outlined, label: 'Complément', value: user.complement as String),
+          _InfoRow(
+            icon: Icons.add_location_alt_outlined,
+            label: 'Complément',
+            value: user.complement as String,
+          ),
         if (user.nomCommune != null)
-          _InfoRow(icon: Icons.location_city_outlined, label: 'Commune',
-            value: '${user.cpCommune ?? ''} ${user.nomCommune}'.trim()),
-
+          _InfoRow(
+            icon: Icons.location_city_outlined,
+            label: 'Commune',
+            value: '${user.cpCommune ?? ''} ${user.nomCommune}'.trim(),
+          ),
         const SizedBox(height: 24),
-
-        // Bandeau info modification
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: const Color(0xFF0f3460),
-            borderRadius: BorderRadius.circular(12),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                const Color(0xFF0f3460),
+                const Color(0xFF0f3460).withAlpha(200),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(color: Colors.white12),
           ),
           child: const Row(
@@ -270,7 +382,7 @@ class _SectionTitle extends StatelessWidget {
           color: Color(0xFFe94560),
           fontSize: 11,
           fontWeight: FontWeight.w700,
-          letterSpacing: 1.2,
+          letterSpacing: 1.1,
         ),
       ),
     );
@@ -282,33 +394,45 @@ class _InfoRow extends StatelessWidget {
   final String label;
   final String value;
 
-  static const Color _surface = Color(0xFF16213e);
-
-  const _InfoRow({required this.icon, required this.label, required this.value});
+  const _InfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: _surface,
-        borderRadius: BorderRadius.circular(10),
+        color: const Color(0xFF16213e),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white10),
       ),
       child: Row(
         children: [
-          Icon(icon, color: Colors.white38, size: 18),
-          const SizedBox(width: 12),
+          Icon(icon, color: Colors.white54, size: 18),
+          const SizedBox(width: 10),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white54,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const Spacer(),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label,
-                  style: const TextStyle(color: Colors.white38, fontSize: 11)),
-                const SizedBox(height: 2),
-                Text(value,
-                  style: const TextStyle(color: Colors.white, fontSize: 14)),
-              ],
+            flex: 2,
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],
@@ -317,11 +441,9 @@ class _InfoRow extends StatelessWidget {
   }
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// ONGLET 2 — HISTORIQUE RÉSERVATIONS
-// ══════════════════════════════════════════════════════════════════════════════
-
 class _ReservationsTab extends StatefulWidget {
+  const _ReservationsTab();
+
   @override
   State<_ReservationsTab> createState() => _ReservationsTabState();
 }
@@ -329,7 +451,7 @@ class _ReservationsTab extends StatefulWidget {
 class _ReservationsTabState extends State<_ReservationsTab>
     with AutomaticKeepAliveClientMixin {
   static const Color _surface = Color(0xFF16213e);
-  static const Color _accent  = Color(0xFFe94560);
+  static const Color _accent = Color(0xFFe94560);
 
   List<Map<String, dynamic>> _reservations = [];
   bool _loading = true;
@@ -345,31 +467,48 @@ class _ReservationsTabState extends State<_ReservationsTab>
   }
 
   Future<void> _loadReservations() async {
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
     try {
       final token = context.read<AuthProvider>().token;
       if (token == null) {
-        setState(() { _error = 'Non connecté.'; _loading = false; });
+        setState(() {
+          _error = 'Connectez-vous pour voir vos réservations.';
+          _loading = false;
+        });
         return;
       }
-      final response = await http.get(
-        Uri.parse(ApiConfig.mesReservations),
-        headers: {'Authorization': 'Bearer $token'},
-      ).timeout(const Duration(seconds: 15));
+
+      final response = await http
+          .get(
+            Uri.parse(ApiConfig.mesReservations),
+            headers: {'Authorization': 'Bearer $token'},
+          )
+          .timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
         if (data['success'] == true) {
           setState(() {
-            _reservations = List<Map<String, dynamic>>.from(data['data']);
+            _reservations = List<Map<String, dynamic>>.from(data['data'] as List<dynamic>);
             _loading = false;
           });
           return;
         }
       }
-      setState(() { _error = 'Impossible de charger les réservations.'; _loading = false; });
+
+      setState(() {
+        _error = 'Impossible de charger les réservations.';
+        _loading = false;
+      });
     } catch (_) {
-      setState(() { _error = 'Erreur réseau.'; _loading = false; });
+      setState(() {
+        _error = 'Erreur réseau.';
+        _loading = false;
+      });
     }
   }
 
@@ -378,41 +517,72 @@ class _ReservationsTabState extends State<_ReservationsTab>
     super.build(context);
 
     if (_loading) {
-      return const Center(child: CircularProgressIndicator(color: Color(0xFFe94560)));
+      return const Center(child: CircularProgressIndicator(color: _accent));
     }
 
     if (_error != null) {
       return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.wifi_off, color: Colors.white38, size: 48),
-            const SizedBox(height: 12),
-            Text(_error!, style: const TextStyle(color: Colors.white54, fontSize: 14)),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: _loadReservations,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Réessayer'),
-            ),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.wifi_off, color: Colors.white38, size: 48),
+              const SizedBox(height: 12),
+              Text(
+                _error!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white54, fontSize: 14),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: _loadReservations,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Réessayer'),
+              ),
+            ],
+          ),
         ),
       );
     }
 
     if (_reservations.isEmpty) {
       return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('🏖️', style: TextStyle(fontSize: 56)),
-            const SizedBox(height: 16),
-            const Text('Aucune réservation pour l\'instant.',
-              style: TextStyle(color: Colors.white54, fontSize: 14)),
-            const SizedBox(height: 8),
-            const Text('Explorez les biens disponibles !',
-              style: TextStyle(color: Colors.white38, fontSize: 12)),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 88,
+                height: 88,
+                decoration: BoxDecoration(
+                  color: Colors.white.withAlpha(8),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: Colors.white10),
+                ),
+                child: const Center(
+                  child: Text('🏖️', style: TextStyle(fontSize: 44)),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Aucune réservation pour l\'instant.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Explorez les biens disponibles !',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white54, fontSize: 13),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -421,9 +591,10 @@ class _ReservationsTabState extends State<_ReservationsTab>
       onRefresh: _loadReservations,
       color: _accent,
       backgroundColor: _surface,
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16),
+      child: ListView.separated(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         itemCount: _reservations.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 12),
         itemBuilder: (context, index) {
           return _ReservationCard(reservation: _reservations[index]);
         },
@@ -436,63 +607,84 @@ class _ReservationCard extends StatelessWidget {
   final Map<String, dynamic> reservation;
 
   static const Color _surface = Color(0xFF16213e);
-  static const Color _accent  = Color(0xFFe94560);
+  static const Color _accent = Color(0xFFe94560);
 
   const _ReservationCard({required this.reservation});
 
   Color _statutColor(String statut) {
     switch (statut) {
-      case 'en_cours': return const Color(0xFF4CAF50);
-      case 'a_venir':  return const Color(0xFF2196F3);
-      case 'termine':  return Colors.white38;
-      default:         return Colors.white38;
+      case 'en_cours':
+        return const Color(0xFF4CAF50);
+      case 'a_venir':
+        return const Color(0xFF2196F3);
+      case 'termine':
+        return Colors.white38;
+      default:
+        return Colors.white38;
     }
   }
 
   String _statutLabel(String statut) {
     switch (statut) {
-      case 'en_cours': return 'En cours';
-      case 'a_venir':  return 'À venir';
-      case 'termine':  return 'Terminé';
-      default:         return statut;
+      case 'en_cours':
+        return 'En cours';
+      case 'a_venir':
+        return 'À venir';
+      case 'termine':
+        return 'Terminé';
+      default:
+        return statut;
     }
   }
 
   String _formatDate(String iso) {
     try {
-      final parts = iso.split('-');
-      if (parts.length == 3) return '${parts[2]}/${parts[1]}/${parts[0]}';
-    } catch (_) {}
-    return iso;
+      return DateFormat('d MMM yyyy', 'fr_FR').format(DateTime.parse(iso));
+    } catch (_) {
+      return iso;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final bien    = reservation['bien'] as Map<String, dynamic>;
-    final statut  = reservation['statut'] as String;
-    final photo   = ApiConfig.photoUrl(bien['photo'] as String?);
+    final bien = reservation['bien'] as Map<String, dynamic>;
+    final statut = reservation['statut'] as String? ?? '';
+    final photo = ApiConfig.photoUrl(bien['photo'] as String?);
     final couleur = _statutColor(statut);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: _surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: couleur.withAlpha(80), width: 1),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            _surface,
+            const Color(0xFF101828),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white10),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(60),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Column(
         children: [
-          // En-tête avec statut
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
               color: couleur.withAlpha(25),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
             ),
             child: Row(
               children: [
                 Container(
-                  width: 8, height: 8,
+                  width: 8,
+                  height: 8,
                   decoration: BoxDecoration(color: couleur, shape: BoxShape.circle),
                 ),
                 const SizedBox(width: 8),
@@ -501,7 +693,7 @@ class _ReservationCard extends StatelessWidget {
                   style: TextStyle(
                     color: couleur,
                     fontSize: 12,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 const Spacer(),
@@ -512,28 +704,26 @@ class _ReservationCard extends StatelessWidget {
               ],
             ),
           ),
-
-          // Corps : photo + infos
           Padding(
             padding: const EdgeInsets.all(12),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Photo
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: photo.isNotEmpty
-                      ? CachedNetworkImage(
-                          imageUrl: photo,
-                          width: 72, height: 72,
-                          fit: BoxFit.cover,
-                          errorWidget: (_, __, ___) => _photoPh(),
-                        )
-                      : _photoPh(),
+                  borderRadius: BorderRadius.circular(12),
+                  child: SizedBox(
+                    width: 72,
+                    height: 72,
+                    child: photo.isNotEmpty
+                        ? CachedNetworkImage(
+                            imageUrl: photo,
+                            fit: BoxFit.cover,
+                            errorWidget: (_, __, ___) => _photoPh(),
+                          )
+                        : _photoPh(),
+                  ),
                 ),
                 const SizedBox(width: 12),
-
-                // Infos
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -555,25 +745,24 @@ class _ReservationCard extends StatelessWidget {
                           style: const TextStyle(color: Colors.white54, fontSize: 12),
                         ),
                       ],
-                      const SizedBox(height: 6),
-                      // Dates
+                      const SizedBox(height: 8),
                       Row(
                         children: [
-                          const Icon(Icons.calendar_today_outlined,
-                            color: Colors.white38, size: 13),
+                          const Icon(Icons.calendar_today_outlined, color: Colors.white38, size: 13),
                           const SizedBox(width: 4),
-                          Text(
-                            '${_formatDate(reservation['date_debut'])} → ${_formatDate(reservation['date_fin'])}',
-                            style: const TextStyle(color: Colors.white70, fontSize: 12),
+                          Expanded(
+                            child: Text(
+                              '${_formatDate(reservation['date_debut'] as String)} → ${_formatDate(reservation['date_fin'] as String)}',
+                              style: const TextStyle(color: Colors.white70, fontSize: 12),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 4),
-                      // Nuits + coût
+                      const SizedBox(height: 6),
                       Row(
                         children: [
-                          const Icon(Icons.nights_stay_outlined,
-                            color: Colors.white38, size: 13),
+                          const Icon(Icons.nights_stay_outlined, color: Colors.white38, size: 13),
                           const SizedBox(width: 4),
                           Text(
                             '${reservation['nb_nuits']} nuit${(reservation['nb_nuits'] as int) > 1 ? 's' : ''}',
@@ -581,9 +770,9 @@ class _ReservationCard extends StatelessWidget {
                           ),
                           const Spacer(),
                           Text(
-                            '${(reservation['total_cost'] as double).toStringAsFixed(0)} €',
+                            '${(reservation['total_cost'] as num).toStringAsFixed(0)} €',
                             style: const TextStyle(
-                              color: Color(0xFFe94560),
+                              color: _accent,
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
                             ),
@@ -603,32 +792,215 @@ class _ReservationCard extends StatelessWidget {
 
   Widget _photoPh() {
     return Container(
-      width: 72, height: 72,
-      decoration: BoxDecoration(
-        color: const Color(0xFF0f3460),
-        borderRadius: BorderRadius.circular(10),
-      ),
+      color: const Color(0xFF0f3460),
       child: const Center(child: Text('🏠', style: TextStyle(fontSize: 28))),
     );
   }
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// ONGLET 3 — PARAMÈTRES
-// ══════════════════════════════════════════════════════════════════════════════
-
 class _ParametresTab extends StatelessWidget {
-  static const Color _surface = Color(0xFF16213e);
-  static const Color _accent  = Color(0xFFe94560);
+  const _ParametresTab();
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        const SizedBox(height: 8),
+    return const _ParametresTabBody();
+  }
+}
 
-        // Déconnexion
+class _ParametresTabBody extends StatefulWidget {
+  const _ParametresTabBody();
+
+  @override
+  State<_ParametresTabBody> createState() => _ParametresTabBodyState();
+}
+
+class _ParametresTabBodyState extends State<_ParametresTabBody> {
+  static const Color _surface = Color(0xFF16213e);
+  static const Color _accent = Color(0xFFe94560);
+
+  bool _loading = true;
+  bool _notificationsEnabled = true;
+  bool _compactLayout = false;
+  String _language = 'fr';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPreferences();
+  }
+
+  Future<void> _loadPreferences() async {
+    final notifications = await AppPreferencesService.getNotificationsEnabled();
+    final compactLayout = await AppPreferencesService.getCompactLayout();
+    final language = await AppPreferencesService.getLanguage();
+
+    if (!mounted) return;
+    setState(() {
+      _notificationsEnabled = notifications;
+      _compactLayout = compactLayout;
+      _language = language;
+      _loading = false;
+    });
+  }
+
+  Future<void> _setNotifications(bool value) async {
+    setState(() => _notificationsEnabled = value);
+    await AppPreferencesService.setNotificationsEnabled(value);
+  }
+
+  Future<void> _setCompactLayout(bool value) async {
+    setState(() => _compactLayout = value);
+    await AppPreferencesService.setCompactLayout(value);
+  }
+
+  Future<void> _pickLanguage() async {
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: _surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 10),
+              Container(width: 42, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(999))),
+              const SizedBox(height: 12),
+              const ListTile(
+                title: Text('Choisir la langue', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                subtitle: Text('La sélection est enregistrée localement.', style: TextStyle(color: Colors.white54)),
+              ),
+              RadioListTile<String>(
+                value: 'fr',
+                groupValue: _language,
+                onChanged: (value) => Navigator.pop(ctx, value),
+                title: const Text('Français', style: TextStyle(color: Colors.white)),
+                activeColor: _accent,
+              ),
+              RadioListTile<String>(
+                value: 'en',
+                groupValue: _language,
+                onChanged: (value) => Navigator.pop(ctx, value),
+                title: const Text('English', style: TextStyle(color: Colors.white)),
+                activeColor: _accent,
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (selected != null) {
+      setState(() => _language = selected);
+      await AppPreferencesService.setLanguage(selected);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Langue enregistrée: ${selected == 'fr' ? 'Français' : 'English'}')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator(color: _accent));
+    }
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      children: [
+        const _SectionTitle(title: 'Compte'),
+        _SettingsTile(
+          icon: Icons.edit_outlined,
+          label: 'Modifier le profil',
+          color: Colors.white,
+          onTap: () async {
+            final user = context.read<AuthProvider>().currentUser;
+            if (user == null) return;
+            final updated = await showEditProfileSheet(context, user);
+            if (updated && context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Profil mis à jour.'),
+                  backgroundColor: Color(0xFF4CAF50),
+                ),
+              );
+            }
+          },
+        ),
+        const SizedBox(height: 12),
+        _SwitchSettingsTile(
+          icon: Icons.notifications_none,
+          label: 'Notifications',
+          subtitle: 'Conserver les alertes locales sur cet appareil.',
+          value: _notificationsEnabled,
+          onChanged: _setNotifications,
+        ),
+        const SizedBox(height: 12),
+        _SettingsTile(
+          icon: Icons.notifications_active_outlined,
+          label: 'Centre de notifications',
+          subtitle: 'Consulter les rappels et alertes récentes.',
+          color: Colors.white,
+          onTap: () => context.push('/notifications'),
+        ),
+        const SizedBox(height: 12),
+        _SwitchSettingsTile(
+          icon: Icons.view_agenda_outlined,
+          label: 'Affichage compact',
+          subtitle: 'Réduit les espacements sur les petits écrans.',
+          value: _compactLayout,
+          onChanged: _setCompactLayout,
+        ),
+        const SizedBox(height: 12),
+        _SettingsTile(
+          icon: Icons.language,
+          label: 'Langue',
+          subtitle: _language == 'fr' ? 'Français' : 'English',
+          color: Colors.white,
+          onTap: _pickLanguage,
+        ),
+
+        const SizedBox(height: 20),
+        const _SectionTitle(title: 'Support'),
+        _SettingsTile(
+          icon: Icons.support_agent,
+          label: 'Contacter le support',
+          color: Colors.white,
+          onTap: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Ajoutez ici un lien mail ou une page support.')),
+            );
+          },
+        ),
+        const SizedBox(height: 12),
+        _SettingsTile(
+          icon: Icons.privacy_tip_outlined,
+          label: 'Confidentialité',
+          color: Colors.white,
+          onTap: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Page confidentialité à brancher si nécessaire.')),
+            );
+          },
+        ),
+        const SizedBox(height: 12),
+        _SettingsTile(
+          icon: Icons.description_outlined,
+          label: 'Mentions légales',
+          color: Colors.white,
+          onTap: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Page mentions légales à brancher si nécessaire.')),
+            );
+          },
+        ),
+
+        const SizedBox(height: 20),
+        const _SectionTitle(title: 'Session'),
         _SettingsTile(
           icon: Icons.logout,
           label: 'Se déconnecter',
@@ -638,21 +1010,19 @@ class _ParametresTab extends StatelessWidget {
               context: context,
               builder: (ctx) => AlertDialog(
                 backgroundColor: _surface,
-                title: const Text('Déconnexion',
-                  style: TextStyle(color: Colors.white)),
+                title: const Text('Déconnexion', style: TextStyle(color: Colors.white)),
                 content: const Text(
                   'Voulez-vous vraiment vous déconnecter ?',
-                  style: TextStyle(color: Colors.white70)),
+                  style: TextStyle(color: Colors.white70),
+                ),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(ctx, false),
-                    child: const Text('Annuler',
-                      style: TextStyle(color: Colors.white54)),
+                    child: const Text('Annuler', style: TextStyle(color: Colors.white54)),
                   ),
                   TextButton(
                     onPressed: () => Navigator.pop(ctx, true),
-                    child: const Text('Déconnecter',
-                      style: TextStyle(color: Color(0xFFe94560))),
+                    child: const Text('Déconnecter', style: TextStyle(color: Color(0xFFe94560))),
                   ),
                 ],
               ),
@@ -663,22 +1033,30 @@ class _ParametresTab extends StatelessWidget {
             }
           },
         ),
-
         const SizedBox(height: 24),
-
-        // Infos app
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: _surface,
             borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white10),
           ),
           child: const Column(
             children: [
-              Text('HAP Mobile', style: TextStyle(
-                color: Colors.white54, fontSize: 13, fontWeight: FontWeight.w600)),
+              Text(
+                'HAP Mobile',
+                style: TextStyle(
+                  color: Colors.white54,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
               SizedBox(height: 4),
-              Text('Version 1.0.0', style: TextStyle(color: Colors.white38, fontSize: 11)),
+              Text(
+                'Version mobile optimisée pour la recherche, les favoris et les réservations.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white38, fontSize: 12),
+              ),
             ],
           ),
         ),
@@ -690,37 +1068,60 @@ class _ParametresTab extends StatelessWidget {
 class _SettingsTile extends StatelessWidget {
   final IconData icon;
   final String label;
+  final String? subtitle;
   final Color color;
   final VoidCallback onTap;
-
-  static const Color _surface = Color(0xFF16213e);
 
   const _SettingsTile({
     required this.icon,
     required this.label,
+    this.subtitle,
     required this.color,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: _surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withAlpha(60)),
+          color: const Color(0xFF16213e),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.white10),
         ),
         child: Row(
           children: [
-            Icon(icon, color: color, size: 20),
-            const SizedBox(width: 14),
-            Text(label, style: TextStyle(
-              color: color, fontSize: 14, fontWeight: FontWeight.w600)),
-            const Spacer(),
-            Icon(Icons.chevron_right, color: color.withAlpha(120), size: 20),
+            Icon(icon, color: color),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      subtitle!,
+                      style: const TextStyle(
+                        color: Colors.white54,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: Colors.white38),
           ],
         ),
       ),
@@ -728,26 +1129,89 @@ class _SettingsTile extends StatelessWidget {
   }
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// DELEGATE TabBar persistant
-// ══════════════════════════════════════════════════════════════════════════════
+class _SwitchSettingsTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String subtitle;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  const _SwitchSettingsTile({
+    required this.icon,
+    required this.label,
+    required this.subtitle,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF16213e),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: Colors.white),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    color: Colors.white54,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: value,
+            onChanged: onChanged,
+            activeColor: const Color(0xFFe94560),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class _TabBarDelegate extends SliverPersistentHeaderDelegate {
   final TabBar tabBar;
-  static const Color _surface = Color(0xFF16213e);
 
-  const _TabBarDelegate(this.tabBar);
+  _TabBarDelegate(this.tabBar);
 
   @override
-  double get minExtent => tabBar.preferredSize.height;
+  double get minExtent => tabBarPreferredHeight;
+
   @override
-  double get maxExtent => tabBar.preferredSize.height;
+  double get maxExtent => tabBarPreferredHeight;
+
+  double get tabBarPreferredHeight => tabBar.preferredSize.height;
 
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return Container(color: _surface, child: tabBar);
+    return Container(
+      color: const Color(0xFF16213e),
+      child: tabBar,
+    );
   }
 
   @override
-  bool shouldRebuild(_TabBarDelegate oldDelegate) => false;
+  bool shouldRebuild(covariant _TabBarDelegate oldDelegate) => false;
 }

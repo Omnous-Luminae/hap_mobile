@@ -34,6 +34,7 @@ hapApplyCors(['GET', 'POST', 'DELETE', 'OPTIONS']);
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../config/jwt_config.php';
 require_once __DIR__ . '/../../classes/JWTHelper.php';
+use JWTHelper as JWT;
 $pdo = getPDO();
 
 // ── Auth JWT ───────────────────────────────────────────────────────────────
@@ -49,7 +50,7 @@ if (empty($authHeader) || !preg_match('/^Bearer\s+(.+)$/i', $authHeader, $m)) {
     exit;
 }
 
-$payload = \JWTHelper::decode($m[1], JWT_SECRET);
+$payload = JWT::decode($m[1], JWT_SECRET);
 if ($payload === false) {
     http_response_code(401);
     echo json_encode(['success' => false, 'message' => 'Token invalide ou expiré.']);

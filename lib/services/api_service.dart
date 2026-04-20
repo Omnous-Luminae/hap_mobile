@@ -5,10 +5,13 @@
 /// Un code 401 déclenche une déconnexion automatique.
 
 import 'dart:convert';
+import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
+  static const Duration _requestTimeout = Duration(seconds: 20);
+
   // ── Token ──────────────────────────────────────────────────────────────────
 
   /// Retourne le JWT stocké dans [SharedPreferences], ou null s'il est absent.
@@ -30,11 +33,17 @@ class ApiService {
     bool includeAuth = true,
     bool clearSessionOn401 = true,
   }) async {
-    final uri = Uri.parse(url).replace(queryParameters: params);
-    final headers = await _buildHeaders(includeAuth: includeAuth);
+    try {
+      final uri = Uri.parse(url).replace(queryParameters: params);
+      final headers = await _buildHeaders(includeAuth: includeAuth);
 
-    final response = await http.get(uri, headers: headers);
-    return _handleResponse(response, clearSessionOn401: clearSessionOn401);
+      final response = await http.get(uri, headers: headers).timeout(_requestTimeout);
+      return _handleResponse(response, clearSessionOn401: clearSessionOn401);
+    } on TimeoutException {
+      throw Exception('La requête a expiré. Vérifiez votre connexion.');
+    } on http.ClientException {
+      throw Exception('Connexion réseau indisponible.');
+    }
   }
 
   /// Effectue une requête POST vers [url] avec [body] encodé en JSON.
@@ -48,15 +57,49 @@ class ApiService {
     bool clearSessionOn401 = true,
   }
   ) async {
-    final uri = Uri.parse(url);
-    final headers = await _buildHeaders(includeAuth: includeAuth);
+    try {
+      final uri = Uri.parse(url);
+      final headers = await _buildHeaders(includeAuth: includeAuth);
 
-    final response = await http.post(
-      uri,
-      headers: headers,
-      body: jsonEncode(body),
-    );
-    return _handleResponse(response, clearSessionOn401: clearSessionOn401);
+      final response = await http
+          .post(
+            uri,
+            headers: headers,
+            body: jsonEncode(body),
+          )
+          .timeout(_requestTimeout);
+      return _handleResponse(response, clearSessionOn401: clearSessionOn401);
+    } on TimeoutException {
+      throw Exception('La requête a expiré. Vérifiez votre connexion.');
+    } on http.ClientException {
+      throw Exception('Connexion réseau indisponible.');
+    }
+  }
+
+  /// Effectue une requête DELETE vers [url] avec un corps JSON optionnel.
+  static Future<dynamic> delete(
+    String url, {
+    Map<String, dynamic>? body,
+    bool includeAuth = true,
+    bool clearSessionOn401 = true,
+  }) async {
+    try {
+      final uri = Uri.parse(url);
+      final headers = await _buildHeaders(includeAuth: includeAuth);
+
+      final request = http.Request('DELETE', uri)..headers.addAll(headers);
+      if (body != null) {
+        request.body = jsonEncode(body);
+      }
+
+      final streamed = await request.send().timeout(_requestTimeout);
+      final response = await http.Response.fromStream(streamed).timeout(_requestTimeout);
+      return _handleResponse(response, clearSessionOn401: clearSessionOn401);
+    } on TimeoutException {
+      throw Exception('La requête a expiré. Vérifiez votre connexion.');
+    } on http.ClientException {
+      throw Exception('Connexion réseau indisponible.');
+    }
   }
 
   // ── Helpers privés ─────────────────────────────────────────────────────────

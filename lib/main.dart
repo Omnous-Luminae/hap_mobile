@@ -15,6 +15,7 @@ import 'screens/auth/splash_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/notifications/notifications_screen.dart';
 import 'screens/bien_detail/bien_detail_screen.dart';
 import 'models/bien.dart';
 
@@ -22,10 +23,12 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('fr_FR');
 
+  final authProvider = AuthProvider();
+  await authProvider.checkAuth();
+
   runApp(
-    // AuthProvider disponible dans tout l'arbre de widgets
-    ChangeNotifierProvider(
-      create: (_) => AuthProvider(),
+    ChangeNotifierProvider.value(
+      value: authProvider,
       child: const HapApp(),
     ),
   );
@@ -51,6 +54,10 @@ final _router = GoRouter(
     GoRoute(
       path: '/home',
       builder: (context, state) => const HomeScreen(),
+    ),
+    GoRoute(
+      path: '/notifications',
+      builder: (context, state) => const NotificationsScreen(),
     ),
     GoRoute(
       path: '/bien/:id',
