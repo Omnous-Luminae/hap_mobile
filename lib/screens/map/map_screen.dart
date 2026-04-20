@@ -194,9 +194,17 @@ class _MapScreenState extends State<MapScreen> {
       if (!mounted) return;
       setState(() {
         _pois = pois;
-        _showPois = true;
+        _showPois = pois.isNotEmpty;
         _loadingPois = false;
       });
+      if (pois.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Aucun point d\'interet trouve.'),
+            backgroundColor: Color(0xFF16213e),
+          ),
+        );
+      }
     } catch (_) {
       if (!mounted) return;
       setState(() => _loadingPois = false);

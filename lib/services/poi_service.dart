@@ -13,7 +13,24 @@ class PoiService {
     String? category,
   }) async {
     try {
-      return await _fetchFromDatabase(center, radiusMeters, category);
+      final nearby = await _fetchFromDatabase(
+        center,
+        radiusMeters,
+        category,
+        withLocationFilter: true,
+      );
+      if (nearby.isNotEmpty) return nearby;
+
+      // Fallback: si aucune donnée autour de la position, on récupère la liste globale.
+      final global = await _fetchFromDatabase(
+        center,
+        radiusMeters,
+        category,
+        withLocationFilter: false,
+      );
+      if (global.isNotEmpty) return global;
+
+      return _fetchFromOverpass(center, radiusMeters);
     } catch (_) {
       return _fetchFromOverpass(center, radiusMeters);
     }
@@ -23,15 +40,18 @@ class PoiService {
     LatLng center,
     int radiusMeters,
     String? category,
+    {
+    required bool withLocationFilter,
+    }
   ) async {
-    final uri = Uri.parse(ApiConfig.pois).replace(
-      queryParameters: {
-        'latitude': center.latitude.toString(),
-        'longitude': center.longitude.toString(),
-        'radius': radiusMeters.toString(),
-        if (category != null && category.isNotEmpty) 'category': category,
-      },
-    );
+    final queryParameters = <String, String>{
+      if (withLocationFilter) 'latitude': center.latitude.toString(),
+      if (withLocationFilter) 'longitude': center.longitude.toString(),
+      if (withLocationFilter) 'radius': radiusMeters.toString(),
+      if (category != null && category.isNotEmpty) 'category': category,
+    };
+
+    final uri = Uri.parse(ApiConfig.pois).replace(queryParameters: queryParameters);
 
     final response = await http.get(uri).timeout(const Duration(seconds: 12));
     if (response.statusCode != 200) {
