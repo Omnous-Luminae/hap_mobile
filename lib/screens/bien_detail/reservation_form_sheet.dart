@@ -1,4 +1,5 @@
 /// reservation_form_sheet.dart — Bottom sheet de confirmation et création de réservation
+library;
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';

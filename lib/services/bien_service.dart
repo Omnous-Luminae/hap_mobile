@@ -6,6 +6,7 @@
 ///   - [getFavoris] : liste des IDs favoris de l'utilisateur
 ///
 /// Tous les appels HTTP sont délégués à [ApiService].
+library;
 
 import '../config/api_config.dart';
 import '../models/bien.dart';

@@ -5,6 +5,7 @@
 ///   - Bouton filtres avec badge rouge si filtres actifs
 ///   - Debounce 500 ms pour limiter les appels API
 ///   - Style HAP (fond sombre, border radius 12)
+library;
 
 import 'dart:async';
 

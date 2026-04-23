@@ -2,6 +2,7 @@
 ///
 /// Permet à un locataire de se connecter avec son email et son mot de passe.
 /// Affiche les erreurs via SnackBar et navigue vers HomeScreen en cas de succès.
+library;
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';

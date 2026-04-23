@@ -4,6 +4,7 @@
 ///   - Le thème sombre avec les couleurs HAP (#1a1a2e, #e94560)
 ///   - Le routeur go_router avec les routes nommées
 ///   - Le Provider AuthProvider pour l'état d'authentification global
+library;
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';

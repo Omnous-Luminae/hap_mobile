@@ -6,6 +6,7 @@
 ///   2 → Favoris   (FavorisScreen)
 ///   3 → Réservations (ReservationsScreen)
 ///   4 → Profil    (ProfileScreen)
+library;
 
 import 'package:flutter/material.dart';
 

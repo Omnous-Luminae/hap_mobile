@@ -9,6 +9,7 @@
 ///   - Barre sticky bas : prix/semaine + bouton Réserver
 ///   - Calendrier de disponibilité (bottom sheet)
 ///   - Formulaire de confirmation (bottom sheet)
+library;
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_slider.dart';
@@ -236,12 +237,12 @@ class _BienDetailScreenState extends State<BienDetailScreen> {
       children: [
         CarouselSlider.builder(
           itemCount: photos.length,
-          itemBuilder: (_, i, __) {
+          itemBuilder: (_, i, _) {
             final url = ApiConfig.photoUrl(photos[i].lienPhoto);
             return CachedNetworkImage(
               imageUrl: url,
               fit: BoxFit.cover,
-              errorWidget: (_, __, ___) => _buildPhotoFallback(),
+              errorWidget: (_, _, _) => _buildPhotoFallback(),
             );
           },
           options: CarouselOptions(
@@ -551,7 +552,7 @@ class _BienDetailScreenState extends State<BienDetailScreen> {
                   children: [
                     Text(
                       tarif > 0
-                          ? '${fmt.format(tarif)}'
+                          ? fmt.format(tarif)
                           : 'Sur demande',
                       style: const TextStyle(
                         color: Colors.white,
@@ -743,7 +744,7 @@ class _AvisCard extends StatelessWidget {
                     RatingBarIndicator(
                       rating: avis.rating.toDouble(),
                       itemSize: 14,
-                      itemBuilder: (_, __) =>
+                      itemBuilder: (_, _) =>
                           const Icon(Icons.star, color: Colors.amber),
                     ),
                   ],

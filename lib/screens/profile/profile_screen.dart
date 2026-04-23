@@ -4,6 +4,7 @@
 ///   0 → Infos personnelles
 ///   1 → Historique réservations
 ///   2 → Paramètres
+library;
 
 import 'dart:convert';
 
@@ -594,7 +595,7 @@ class _ReservationsTabState extends State<_ReservationsTab>
       child: ListView.separated(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         itemCount: _reservations.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
+        separatorBuilder: (_, _) => const SizedBox(height: 12),
         itemBuilder: (context, index) {
           return _ReservationCard(reservation: _reservations[index]);
         },
@@ -718,7 +719,7 @@ class _ReservationCard extends StatelessWidget {
                         ? CachedNetworkImage(
                             imageUrl: photo,
                             fit: BoxFit.cover,
-                            errorWidget: (_, __, ___) => _photoPh(),
+                            errorWidget: (_, _, _) => _photoPh(),
                           )
                         : _photoPh(),
                   ),
@@ -1183,7 +1184,7 @@ class _SwitchSettingsTile extends StatelessWidget {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: const Color(0xFFe94560),
+            activeThumbColor: const Color(0xFFe94560),
           ),
         ],
       ),

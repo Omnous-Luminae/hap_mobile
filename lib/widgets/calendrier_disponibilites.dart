@@ -3,6 +3,7 @@
 /// Widget bottom-sheet (DraggableScrollableSheet) affichant un calendrier
 /// TableCalendar en mode sélection de plage de dates.
 /// Les dates déjà réservées sont grisées et non sélectionnables.
+library;
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -414,7 +415,7 @@ class _CalendrierDisponibilitesSheetState
                   style: TextStyle(color: Colors.white54, fontSize: 13),
                 ),
                 Text(
-                  '${NumberFormat.currency(locale: 'fr_FR', symbol: '€', decimalDigits: 0).format(cost)}',
+                  NumberFormat.currency(locale: 'fr_FR', symbol: '€', decimalDigits: 0).format(cost),
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,

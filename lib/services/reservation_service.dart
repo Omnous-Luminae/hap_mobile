@@ -1,4 +1,5 @@
 /// reservation_service.dart — Service d'accès aux données des réservations et détails des biens
+library;
 
 import '../config/api_config.dart';
 import '../models/bien_detail.dart';
@@ -42,7 +43,7 @@ class ReservationService {
     required DateTime dateDebut,
     required DateTime dateFin,
   }) async {
-    final fmt = (DateTime d) =>
+    String fmt(DateTime d) =>
         '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
     return await ApiService.post(

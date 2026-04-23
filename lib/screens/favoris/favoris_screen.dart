@@ -5,6 +5,7 @@
 /// - Bouton cœur pour retirer un favori avec feedback immédiat
 /// - Clic sur une carte → BienDetailScreen
 /// - Pull-to-refresh, état vide, gestion erreur
+library;
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -435,7 +436,7 @@ class _FavoriCard extends StatelessWidget {
                         ? CachedNetworkImage(
                             imageUrl: photoUrl,
                             fit: BoxFit.cover,
-                            errorWidget: (_, __, ___) => _placeholder(),
+                            errorWidget: (_, _, _) => _placeholder(),
                           )
                         : _placeholder(),
                   ),
@@ -499,7 +500,7 @@ class _FavoriCard extends StatelessWidget {
                       children: [
                         RatingBarIndicator(
                           rating: note,
-                          itemBuilder: (_, __) => const Icon(
+                          itemBuilder: (_, _) => const Icon(
                               Icons.star, color: Color(0xFFFFD700)),
                           itemCount: 5,
                           itemSize: 11,

@@ -2,6 +2,7 @@
 ///
 /// Conteneur principal qui gère la navigation par onglets via [HapBottomNavBar].
 /// Utilise un [IndexedStack] pour conserver l'état de chaque onglet.
+library;
 
 import 'package:flutter/material.dart';
 

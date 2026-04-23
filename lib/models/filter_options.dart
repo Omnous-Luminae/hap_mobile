@@ -3,6 +3,7 @@
 /// Encapsule tous les paramètres de filtrage disponibles dans l'API
 /// [get_biens_mobile.php] et fournit [toQueryParams] pour les convertir
 /// en paramètres d'URL.
+library;
 
 /// Options de tri disponibles.
 enum SortOption {

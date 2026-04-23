@@ -5,6 +5,7 @@
 ///   - Badge type de bien en overlay
 ///   - Bouton cœur favori avec animation
 ///   - Informations (nom, commune, note, prix, couchages, animaux)
+library;
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';

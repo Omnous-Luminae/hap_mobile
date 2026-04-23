@@ -6,6 +6,7 @@
 ///   - Autocomplete rue (via api-adresse.data.gouv.fr) conditionnelle à la commune
 ///   - Validation complète de tous les champs
 ///   - Saisie manuelle libre si l'API adresse est indisponible
+library;
 
 import 'dart:async';
 import 'dart:convert';

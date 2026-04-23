@@ -123,7 +123,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             style: TextStyle(color: Colors.white70),
                           ),
                         ),
-                        Switch(value: _enabled, onChanged: _toggleEnabled, activeColor: _accent),
+                        Switch(value: _enabled, onChanged: _toggleEnabled, activeThumbColor: _accent),
                       ],
                     ),
                   ),

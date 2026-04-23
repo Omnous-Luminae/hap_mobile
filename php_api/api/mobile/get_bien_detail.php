@@ -39,8 +39,42 @@ $stmtBien = $pdo->prepare("
         tb.designation_type_bien,
         c.nom_commune,
         c.cp_commune,
-        c.latitude_commune  AS lat_commune,
-        c.longitude_commune AS long_commune,
+        CASE b.id_biens
+            WHEN 1 THEN 48.855900
+            WHEN 2 THEN 43.281900
+            WHEN 3 THEN 45.764200
+            WHEN 4 THEN 44.841000
+            WHEN 5 THEN 43.694000
+            WHEN 6 THEN 45.905000
+            WHEN 7 THEN 43.269800
+            WHEN 8 THEN 43.129800
+            WHEN 9 THEN 43.602900
+            WHEN 10 THEN 43.487500
+            WHEN 11 THEN 48.578600
+            WHEN 12 THEN 47.215800
+            WHEN 13 THEN 43.611200
+            WHEN 14 THEN 43.120200
+            WHEN 15 THEN 45.874500
+            ELSE c.latitude_commune
+        END AS lat_commune,
+        CASE b.id_biens
+            WHEN 1 THEN 2.298200
+            WHEN 2 THEN 5.360200
+            WHEN 3 THEN 4.832000
+            WHEN 4 THEN -0.575900
+            WHEN 5 THEN 7.259500
+            WHEN 6 THEN 6.137000
+            WHEN 7 THEN 5.394000
+            WHEN 8 THEN 5.958800
+            WHEN 9 THEN 1.439800
+            WHEN 10 THEN -1.552200
+            WHEN 11 THEN 7.754700
+            WHEN 12 THEN -1.548000
+            WHEN 13 THEN 3.876700
+            WHEN 14 THEN 5.932000
+            WHEN 15 THEN 6.132400
+            ELSE c.longitude_commune
+        END AS long_commune,
         ROUND(AVG(r.rating), 1)     AS note_moyenne,
         COUNT(DISTINCT r.id_review) AS nb_avis
     FROM biens b

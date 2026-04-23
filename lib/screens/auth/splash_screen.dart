@@ -4,6 +4,7 @@
 ///   1. Affiche le logo HAP pendant 1,5 secondes
 ///   2. Vérifie si un token JWT existe dans SharedPreferences
 ///   3. Redirige vers HomeScreen (connecté) ou LoginScreen (non connecté)
+library;
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';

@@ -39,8 +39,42 @@ FROM (
         p.description_pts_interet AS description,
         COALESCE(t.lib_type_points_interet, 'Point d''interet') AS categorie_poi,
         p.rue_pts_interet AS adresse,
-        c.latitude_commune AS latitude,
-        c.longitude_commune AS longitude,
+        CASE p.id_pts_interet
+            WHEN 1 THEN 48.858370
+            WHEN 2 THEN 48.860611
+            WHEN 3 THEN 43.296482
+            WHEN 4 THEN 43.284020
+            WHEN 5 THEN 45.784000
+            WHEN 6 THEN 45.732600
+            WHEN 7 THEN 43.604500
+            WHEN 8 THEN 43.586500
+            WHEN 9 THEN 43.695300
+            WHEN 10 THEN 43.697700
+            WHEN 11 THEN 43.483200
+            WHEN 12 THEN 43.480800
+            WHEN 13 THEN 45.899200
+            WHEN 14 THEN 45.899200
+            WHEN 15 THEN 48.581900
+            ELSE c.latitude_commune
+        END AS latitude,
+        CASE p.id_pts_interet
+            WHEN 1 THEN 2.294481
+            WHEN 2 THEN 2.337644
+            WHEN 3 THEN 5.369780
+            WHEN 4 THEN 5.371000
+            WHEN 5 THEN 4.852700
+            WHEN 6 THEN 4.818400
+            WHEN 7 THEN 1.444200
+            WHEN 8 THEN 1.493400
+            WHEN 9 THEN 7.265400
+            WHEN 10 THEN 7.279500
+            WHEN 11 THEN -1.558600
+            WHEN 12 THEN -1.569600
+            WHEN 13 THEN 6.129400
+            WHEN 14 THEN 6.123600
+            WHEN 15 THEN 7.750700
+            ELSE c.longitude_commune
+        END AS longitude,
         'poi' AS source_type
     FROM pts_interet p
     LEFT JOIN type_pts_interet t ON t.id_type_points_interet = p.id_type_points_interet

@@ -249,7 +249,7 @@ class _MapScreenState extends State<MapScreen> {
                     height: 200,
                     width: double.infinity,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
+                    errorBuilder: (_, _, _) => Container(
                       height: 200,
                       color: _surface,
                       child: const Center(child: Icon(Icons.image_not_supported)),
@@ -376,7 +376,7 @@ class _MapScreenState extends State<MapScreen> {
               options: MapOptions(
                 initialCenter: _defaultCenter,
                 initialZoom: _defaultZoom,
-                onTap: (_, __) => setState(() => _selectedBien = null),
+                onTap: (_, _) => setState(() => _selectedBien = null),
               ),
               children: [
                 TileLayer(
@@ -693,7 +693,7 @@ class _UserLocationMarkerState extends State<_UserLocationMarker>
       children: [
         AnimatedBuilder(
           animation: _pulse,
-          builder: (_, __) => Container(
+          builder: (_, _) => Container(
             width: 44 * _pulse.value,
             height: 44 * _pulse.value,
             decoration: BoxDecoration(
@@ -781,7 +781,7 @@ class _BienBottomSheet extends StatelessWidget {
                         width: 90,
                         height: 90,
                         fit: BoxFit.cover,
-                        errorWidget: (_, __, ___) => _photoPlaceholder(),
+                        errorWidget: (_, _, _) => _photoPlaceholder(),
                       )
                     : _photoPlaceholder(),
               ),
@@ -840,7 +840,7 @@ class _BienBottomSheet extends StatelessWidget {
                         children: [
                           RatingBarIndicator(
                             rating: bien.noteMoyenne!,
-                            itemBuilder: (_, __) => const Icon(Icons.star, color: Color(0xFFFFD700)),
+                            itemBuilder: (_, _) => const Icon(Icons.star, color: Color(0xFFFFD700)),
                             itemCount: 5,
                             itemSize: 13,
                           ),

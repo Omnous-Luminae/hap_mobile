@@ -8,6 +8,7 @@
 ///   - Pull-to-refresh
 ///   - Gestion des erreurs réseau avec bouton "Réessayer"
 ///   - FAB pour ouvrir les filtres
+library;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -300,7 +301,7 @@ class _HomeScreenState extends State<HomeScreen> {
           shrinkWrap: true,
           padding: EdgeInsets.zero,
           itemCount: _searchSuggestions.length,
-          separatorBuilder: (_, __) => const Divider(height: 1, color: Colors.white10),
+          separatorBuilder: (_, _) => const Divider(height: 1, color: Colors.white10),
           itemBuilder: (context, index) {
             final item = _searchSuggestions[index];
             final photo = ApiConfig.photoUrl(item['photo'] as String?);
@@ -552,7 +553,7 @@ class _HomeScreenState extends State<HomeScreen> {
       physics: const NeverScrollableScrollPhysics(),
       itemCount: 5,
       padding: const EdgeInsets.only(top: 4),
-      itemBuilder: (_, __) => _buildSkeletonCard(),
+      itemBuilder: (_, _) => _buildSkeletonCard(),
     );
   }
 

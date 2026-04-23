@@ -1,4 +1,5 @@
 /// bien_detail.dart — Modèle détaillé d'un bien avec photos, avis et tarifs
+library;
 
 import 'bien.dart';
 

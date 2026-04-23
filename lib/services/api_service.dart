@@ -3,6 +3,7 @@
 /// Toutes les requêtes GET et POST incluent automatiquement le header
 /// `Authorization: Bearer <token>` si un token est stocké localement.
 /// Un code 401 déclenche une déconnexion automatique.
+library;
 
 import 'dart:convert';
 import 'dart:async';

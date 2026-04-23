@@ -1,6 +1,7 @@
 /// user.dart — Modèle de données représentant un Locataire (utilisateur mobile)
 ///
 /// Correspond aux champs de la table MySQL `Locataire` + `Commune` (join).
+library;
 
 class User {
   /// Identifiant unique du locataire

@@ -10,6 +10,7 @@
 ///   - Tri (RadioButtons)
 ///
 /// Retourne le [FilterOptions] mis à jour via [onApply].
+library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
@@ -389,7 +390,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
         Switch(
           value: _animaux,
           onChanged: (v) => setState(() => _animaux = v),
-          activeColor: _accent,
+          activeThumbColor: _accent,
         ),
       ],
     );

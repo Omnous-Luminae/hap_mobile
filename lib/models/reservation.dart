@@ -1,4 +1,5 @@
 /// reservation.dart — Modèle d'une réservation utilisateur
+library;
 
 /// Informations condensées du bien dans une réservation.
 class ReservationBien {

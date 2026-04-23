@@ -8,6 +8,8 @@
 /// - Affiche les cartes avec statut (à venir / en cours / terminé)
 /// - Bouton annuler sur les réservations "à venir" uniquement
 /// - Pull-to-refresh
+library;
+
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -412,8 +414,8 @@ class _ReservationCard extends StatelessWidget {
                         ? CachedNetworkImage(
                             imageUrl: ApiConfig.photoUrl(r.bien.photo),
                             fit: BoxFit.cover,
-                            placeholder: (_, __) => _fallbackPhoto(loading: true),
-                            errorWidget: (_, __, ___) => _fallbackPhoto(),
+                            placeholder: (_, _) => _fallbackPhoto(loading: true),
+                            errorWidget: (_, _, _) => _fallbackPhoto(),
                           )
                         : _fallbackPhoto(),
                   ),

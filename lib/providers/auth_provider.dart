@@ -12,6 +12,7 @@
 ///   // Action
 ///   await context.read<AuthProvider>().login(email, password);
 ///   ```
+library;
 
 import 'package:flutter/foundation.dart';
 

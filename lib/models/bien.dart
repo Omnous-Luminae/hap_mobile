@@ -3,6 +3,7 @@
 /// Représente un bien immobilier retourné par [get_biens_mobile.php].
 /// Inclut les informations de la commune, du type de bien,
 /// la photo principale, la note moyenne et le tarif par semaine.
+library;
 
 class Bien {
   /// Identifiant unique du bien

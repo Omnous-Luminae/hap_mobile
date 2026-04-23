@@ -5,6 +5,7 @@
 ///   - La persistance du token JWT et des données utilisateur dans SharedPreferences
 ///   - La récupération du profil courant (depuis le cache ou l'API)
 ///   - La déconnexion (logout)
+library;
 
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
