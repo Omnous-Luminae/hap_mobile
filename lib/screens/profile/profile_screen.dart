@@ -822,7 +822,6 @@ class _ParametresTabBodyState extends State<_ParametresTabBody> {
   bool _loading = true;
   bool _notificationsEnabled = true;
   bool _compactLayout = false;
-  String _language = 'fr';
 
   @override
   void initState() {
@@ -833,13 +832,11 @@ class _ParametresTabBodyState extends State<_ParametresTabBody> {
   Future<void> _loadPreferences() async {
     final notifications = await AppPreferencesService.getNotificationsEnabled();
     final compactLayout = await AppPreferencesService.getCompactLayout();
-    final language = await AppPreferencesService.getLanguage();
 
     if (!mounted) return;
     setState(() {
       _notificationsEnabled = notifications;
       _compactLayout = compactLayout;
-      _language = language;
       _loading = false;
     });
   }
@@ -852,56 +849,6 @@ class _ParametresTabBodyState extends State<_ParametresTabBody> {
   Future<void> _setCompactLayout(bool value) async {
     setState(() => _compactLayout = value);
     await AppPreferencesService.setCompactLayout(value);
-  }
-
-  Future<void> _pickLanguage() async {
-    final selected = await showModalBottomSheet<String>(
-      context: context,
-      backgroundColor: _surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 10),
-              Container(width: 42, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(999))),
-              const SizedBox(height: 12),
-              const ListTile(
-                title: Text('Choisir la langue', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
-                subtitle: Text('La sélection est enregistrée localement.', style: TextStyle(color: Colors.white54)),
-              ),
-              RadioListTile<String>(
-                value: 'fr',
-                groupValue: _language,
-                onChanged: (value) => Navigator.pop(ctx, value),
-                title: const Text('Français', style: TextStyle(color: Colors.white)),
-                activeColor: _accent,
-              ),
-              RadioListTile<String>(
-                value: 'en',
-                groupValue: _language,
-                onChanged: (value) => Navigator.pop(ctx, value),
-                title: const Text('English', style: TextStyle(color: Colors.white)),
-                activeColor: _accent,
-              ),
-              const SizedBox(height: 8),
-            ],
-          ),
-        );
-      },
-    );
-
-    if (selected != null) {
-      setState(() => _language = selected);
-      await AppPreferencesService.setLanguage(selected);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Langue enregistrée: ${selected == 'fr' ? 'Français' : 'English'}')),
-      );
-    }
   }
 
   @override
@@ -955,49 +902,6 @@ class _ParametresTabBodyState extends State<_ParametresTabBody> {
           subtitle: 'Réduit les espacements sur les petits écrans.',
           value: _compactLayout,
           onChanged: _setCompactLayout,
-        ),
-        const SizedBox(height: 12),
-        _SettingsTile(
-          icon: Icons.language,
-          label: 'Langue',
-          subtitle: _language == 'fr' ? 'Français' : 'English',
-          color: Colors.white,
-          onTap: _pickLanguage,
-        ),
-
-        const SizedBox(height: 20),
-        const _SectionTitle(title: 'Support'),
-        _SettingsTile(
-          icon: Icons.support_agent,
-          label: 'Contacter le support',
-          color: Colors.white,
-          onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Ajoutez ici un lien mail ou une page support.')),
-            );
-          },
-        ),
-        const SizedBox(height: 12),
-        _SettingsTile(
-          icon: Icons.privacy_tip_outlined,
-          label: 'Confidentialité',
-          color: Colors.white,
-          onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Page confidentialité à brancher si nécessaire.')),
-            );
-          },
-        ),
-        const SizedBox(height: 12),
-        _SettingsTile(
-          icon: Icons.description_outlined,
-          label: 'Mentions légales',
-          color: Colors.white,
-          onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Page mentions légales à brancher si nécessaire.')),
-            );
-          },
         ),
 
         const SizedBox(height: 20),
