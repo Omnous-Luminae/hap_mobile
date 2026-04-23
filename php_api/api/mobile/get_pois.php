@@ -9,6 +9,25 @@ hapApplyCors(['GET', 'OPTIONS']);
 require_once __DIR__ . '/../../config/db.php';
 $pdo = getPDO();
 
+$commonsFileUrl = function (string $fileName): string {
+    return 'https://commons.wikimedia.org/wiki/Special:FilePath/' . rawurlencode($fileName);
+};
+
+$poiPhotoOverrides = [
+    1 => [$commonsFileUrl('Paris_Eiffel_092.JPG')],
+    2 => [$commonsFileUrl('Louvre_Courtyard,_Looking_West.jpg')],
+    3 => [$commonsFileUrl('Vieuxport.jpg')],
+    4 => [$commonsFileUrl('NotreDameDeLaGarde_Statue1.jpg')],
+    5 => [$commonsFileUrl('Lac_du_Parc_de_la_tête_d\'or,_Lyon.jpg')],
+    6 => [$commonsFileUrl('2018-10-09_Musee_des_Confluences_Lyon.jpg')],
+    7 => [$commonsFileUrl('Capitole_Toulouse_-_Cour_Henri_IV_-_portail_de_Nicolas_Bachelier.jpg')],
+    8 => [$commonsFileUrl('CDE_Mir.JPG')],
+    12 => [$commonsFileUrl('Rocher_de_la_Vierge_-_Biarritz.jpg')],
+    13 => [$commonsFileUrl('Lac_d\'Annecy_Apr_2012.jpg')],
+    14 => [$commonsFileUrl('Château_d\'Annecy.jpg')],
+    15 => [$commonsFileUrl('Cathédrale_Notre-Dame_de_Strasbourg_août_2014.jpg')],
+];
+
 $latitude  = isset($_GET['latitude']) ? (float) $_GET['latitude'] : null;
 $longitude = isset($_GET['longitude']) ? (float) $_GET['longitude'] : null;
 $radius    = isset($_GET['radius']) ? (int) $_GET['radius'] : 2500;
@@ -87,9 +106,45 @@ FROM (
         e.nom_evenement AS nom_poi,
         e.description_evenement AS description,
         CONCAT('Evenement - ', COALESCE(te.lib_type_evenement, 'General')) AS categorie_poi,
-        NULL AS adresse,
-        c.latitude_commune AS latitude,
-        c.longitude_commune AS longitude,
+        CASE e.id_evenement
+            WHEN 1 THEN 'Palais des Festivals et des Congrès, Cannes'
+            WHEN 2 THEN 'Paris, espaces publics et places de quartier'
+            WHEN 3 THEN 'Arènes de Nîmes, Nîmes'
+            WHEN 4 THEN 'Théâtre antique de Vienne, Vienne'
+            WHEN 5 THEN 'Intra-muros, Avignon'
+            WHEN 6 THEN 'Centre-ville de Lille'
+            WHEN 7 THEN 'Place Broglie, Strasbourg'
+            WHEN 8 THEN 'Théâtres antiques de Fourvière, Lyon'
+            WHEN 9 THEN 'Centre-ville et port de Lorient'
+            WHEN 10 THEN 'Jardins Biovès, Menton'
+            ELSE c.nom_commune
+        END AS adresse,
+        CASE e.id_evenement
+            WHEN 1 THEN 43.5510
+            WHEN 2 THEN 48.8566
+            WHEN 3 THEN 43.8365
+            WHEN 4 THEN 45.5245
+            WHEN 5 THEN 43.9493
+            WHEN 6 THEN 50.6364
+            WHEN 7 THEN 48.5841
+            WHEN 8 THEN 45.7615
+            WHEN 9 THEN 47.7480
+            WHEN 10 THEN 43.7760
+            ELSE c.latitude_commune
+        END AS latitude,
+        CASE e.id_evenement
+            WHEN 1 THEN 7.0179
+            WHEN 2 THEN 2.3522
+            WHEN 3 THEN 4.3600
+            WHEN 4 THEN 4.8724
+            WHEN 5 THEN 4.8055
+            WHEN 6 THEN 3.0630
+            WHEN 7 THEN 7.7452
+            WHEN 8 THEN 4.8210
+            WHEN 9 THEN -3.3700
+            WHEN 10 THEN 7.5030
+            ELSE c.longitude_commune
+        END AS longitude,
         'event' AS source_type
     FROM evenement e
     LEFT JOIN type_evenement te ON te.id_type_evenement = e.id_type_evenement
@@ -117,14 +172,18 @@ try {
         ORDER BY id_photo_pts ASC
     ');
 
-    $data = array_map(function ($row) use ($photoStmt) {
+    $data = array_map(function ($row) use ($photoStmt, $poiPhotoOverrides) {
         $id = (int) $row['id_poi'];
         $photos = [];
 
         // Les événements ont un offset 1000000, pas de photos dédiées.
         if (($row['source_type'] ?? '') === 'poi') {
-            $photoStmt->execute([$id]);
-            $photos = $photoStmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
+            if (isset($poiPhotoOverrides[$id])) {
+                $photos = $poiPhotoOverrides[$id];
+            } else {
+                $photoStmt->execute([$id]);
+                $photos = $photoStmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
+            }
         }
 
         return [
