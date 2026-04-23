@@ -49,6 +49,7 @@ class PoiService {
       if (withLocationFilter) 'longitude': center.longitude.toString(),
       if (withLocationFilter) 'radius': radiusMeters.toString(),
       if (category != null && category.isNotEmpty) 'category': category,
+      't': DateTime.now().millisecondsSinceEpoch.toString(),
     };
 
     final uri = Uri.parse(ApiConfig.pois).replace(queryParameters: queryParameters);

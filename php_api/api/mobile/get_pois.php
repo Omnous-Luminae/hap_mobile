@@ -6,27 +6,12 @@
 require_once __DIR__ . '/../../config/cors.php';
 hapApplyCors(['GET', 'OPTIONS']);
 
+// Evite les réponses mises en cache côté navigateur (utile en Flutter Web).
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+
 require_once __DIR__ . '/../../config/db.php';
 $pdo = getPDO();
-
-$commonsFileUrl = function (string $fileName): string {
-    return 'https://commons.wikimedia.org/wiki/Special:FilePath/' . rawurlencode($fileName);
-};
-
-$poiPhotoOverrides = [
-    1 => [$commonsFileUrl('Paris_Eiffel_092.JPG')],
-    2 => [$commonsFileUrl('Louvre_Courtyard,_Looking_West.jpg')],
-    3 => [$commonsFileUrl('Vieuxport.jpg')],
-    4 => [$commonsFileUrl('NotreDameDeLaGarde_Statue1.jpg')],
-    5 => [$commonsFileUrl('Lac_du_Parc_de_la_tête_d\'or,_Lyon.jpg')],
-    6 => [$commonsFileUrl('2018-10-09_Musee_des_Confluences_Lyon.jpg')],
-    7 => [$commonsFileUrl('Capitole_Toulouse_-_Cour_Henri_IV_-_portail_de_Nicolas_Bachelier.jpg')],
-    8 => [$commonsFileUrl('CDE_Mir.JPG')],
-    12 => [$commonsFileUrl('Rocher_de_la_Vierge_-_Biarritz.jpg')],
-    13 => [$commonsFileUrl('Lac_d\'Annecy_Apr_2012.jpg')],
-    14 => [$commonsFileUrl('Château_d\'Annecy.jpg')],
-    15 => [$commonsFileUrl('Cathédrale_Notre-Dame_de_Strasbourg_août_2014.jpg')],
-];
 
 $latitude  = isset($_GET['latitude']) ? (float) $_GET['latitude'] : null;
 $longitude = isset($_GET['longitude']) ? (float) $_GET['longitude'] : null;
@@ -172,18 +157,14 @@ try {
         ORDER BY id_photo_pts ASC
     ');
 
-    $data = array_map(function ($row) use ($photoStmt, $poiPhotoOverrides) {
+    $data = array_map(function ($row) use ($photoStmt) {
         $id = (int) $row['id_poi'];
         $photos = [];
 
         // Les événements ont un offset 1000000, pas de photos dédiées.
         if (($row['source_type'] ?? '') === 'poi') {
-            if (isset($poiPhotoOverrides[$id])) {
-                $photos = $poiPhotoOverrides[$id];
-            } else {
-                $photoStmt->execute([$id]);
-                $photos = $photoStmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
-            }
+            $photoStmt->execute([$id]);
+            $photos = $photoStmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
         }
 
         return [

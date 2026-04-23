@@ -55,6 +55,7 @@ class _BienDetailScreenState extends State<BienDetailScreen> {
   bool        _isLoadingDispos  = false;
   String?     _error;
   int         _photoIndex       = 0;
+  final _carouselController = CarouselSliderController();
 
   // Ranges réservées pour le calendrier
   List<Map<String, String>> _reservedRanges = [];
@@ -236,6 +237,7 @@ class _BienDetailScreenState extends State<BienDetailScreen> {
       fit: StackFit.expand,
       children: [
         CarouselSlider.builder(
+          carouselController: _carouselController,
           itemCount: photos.length,
           itemBuilder: (_, i, _) {
             final url = ApiConfig.photoUrl(photos[i].lienPhoto);
@@ -249,6 +251,10 @@ class _BienDetailScreenState extends State<BienDetailScreen> {
             height: double.infinity,
             viewportFraction: 1.0,
             enableInfiniteScroll: photos.length > 1,
+            scrollDirection: Axis.horizontal,
+            autoPlay: false,
+            pauseAutoPlayOnTouch: true,
+            scrollPhysics: const ClampingScrollPhysics(),
             onPageChanged: (i, _) => setState(() => _photoIndex = i),
           ),
         ),
@@ -303,6 +309,83 @@ class _BienDetailScreenState extends State<BienDetailScreen> {
             ),
           ),
         ),
+        // Boutons de navigation (précédent/suivant)
+        if (photos.length > 1) ...[
+          Positioned(
+            left: 12,
+            top: 0,
+            bottom: 0,
+            child: Center(
+              child: GestureDetector(
+                onTap: () => _carouselController.previousPage(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                ),
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [_accent, _accent.withAlpha(204)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: _accent.withAlpha(120),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.arrow_back_ios_new,
+                    color: Colors.white,
+                    size: 22,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            right: 12,
+            top: 0,
+            bottom: 0,
+            child: Center(
+              child: GestureDetector(
+                onTap: () => _carouselController.nextPage(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                ),
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [_accent, _accent.withAlpha(204)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: _accent.withAlpha(120),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.arrow_forward_ios,
+                    color: Colors.white,
+                    size: 22,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }
