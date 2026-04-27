@@ -328,34 +328,6 @@ class _InfosTab extends StatelessWidget {
             label: 'Commune',
             value: '${user.cpCommune ?? ''} ${user.nomCommune}'.trim(),
           ),
-        const SizedBox(height: 24),
-        Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                const Color(0xFF0f3460),
-                const Color(0xFF0f3460).withAlpha(200),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.white12),
-          ),
-          child: const Row(
-            children: [
-              Icon(Icons.info_outline, color: Colors.white38, size: 18),
-              SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'La modification du profil sera disponible prochainement.',
-                  style: TextStyle(color: Colors.white38, fontSize: 12),
-                ),
-              ),
-            ],
-          ),
-        ),
       ],
     );
   }
