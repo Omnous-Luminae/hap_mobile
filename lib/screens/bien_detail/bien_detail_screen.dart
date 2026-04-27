@@ -212,18 +212,6 @@ class _BienDetailScreenState extends State<BienDetailScreen> {
           ),
         ),
       ),
-      actions: [
-        Padding(
-          padding: const EdgeInsets.all(8),
-          child: CircleAvatar(
-            backgroundColor: Colors.black54,
-            child: IconButton(
-              icon: const Icon(Icons.ios_share, color: Colors.white, size: 20),
-              onPressed: () {},
-            ),
-          ),
-        ),
-      ],
       flexibleSpace: FlexibleSpaceBar(
         background: photos.isEmpty
             ? _buildPhotoFallback()

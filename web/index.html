@@ -18,19 +18,35 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <meta name="description" content="HAP Mobile: recherchez, réservez et gérez vos locations, vos favoris et vos réservations depuis votre mobile.">
   <meta name="keywords" content="HAP Mobile, locations, réservations, favoris, carte, immobilier, vacances">
   <meta name="author" content="HAP Mobile">
   <meta name="theme-color" content="#1a1a2e">
   <meta name="robots" content="index,follow">
+  <meta name="googlebot" content="index,follow,max-snippet:-1,max-image-preview:large,max-video-preview:-1">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+
+  <link rel="canonical" href="/">
+  <link rel="alternate" hreflang="fr" href="/">
+
   <meta property="og:type" content="website">
   <meta property="og:title" content="HAP Mobile">
   <meta property="og:description" content="Recherchez, réservez et retrouvez vos biens favoris sur HAP Mobile.">
+  <meta property="og:locale" content="fr_FR">
+  <meta property="og:site_name" content="HAP Mobile">
+  <meta property="og:url" content="/">
+  <meta property="og:image" content="icons/Icon-512.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="HAP Mobile">
+  <meta name="twitter:description" content="Recherchez, réservez et retrouvez vos biens favoris sur HAP Mobile.">
+  <meta name="twitter:image" content="icons/Icon-512.png">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="hap_mobile">
+  <meta name="apple-mobile-web-app-title" content="HAP Mobile">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
@@ -38,8 +54,24 @@
 
   <title>HAP Mobile | Locations, favoris et réservations</title>
   <link rel="manifest" href="manifest.json">
+
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "HAP Mobile",
+      "url": "/",
+      "inLanguage": "fr",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "/home?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+  </script>
 </head>
 <body>
+  <noscript>HAP Mobile nécessite JavaScript pour fonctionner.</noscript>
   <!--
     You can customize the "flutter_bootstrap.js" script.
     This is useful to provide a custom configuration to the Flutter loader
@@ -48,6 +80,18 @@
     For more details:
     * https://docs.flutter.dev/platform-integration/web/initialization
   -->
+  <script>
+    // Use absolute canonical/OG URL based on the deployed origin.
+    (function () {
+      var absoluteUrl = window.location.origin + '/';
+      var canonical = document.querySelector('link[rel="canonical"]');
+      var alternate = document.querySelector('link[rel="alternate"][hreflang="fr"]');
+      var ogUrl = document.querySelector('meta[property="og:url"]');
+      if (canonical) canonical.setAttribute('href', absoluteUrl);
+      if (alternate) alternate.setAttribute('href', absoluteUrl);
+      if (ogUrl) ogUrl.setAttribute('content', absoluteUrl);
+    })();
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

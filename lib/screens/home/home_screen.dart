@@ -524,6 +524,7 @@ class _HomeScreenState extends State<HomeScreen> {
           onFavoriToggle: (isFav) async {
             // Toggle favori via API avec gestion d'erreur
             final token = context.read<AuthProvider>().token;
+            final messenger = ScaffoldMessenger.maybeOf(context);
             if (token != null) {
               try {
                 await BienService.toggleFavori(bien.idBiens, token);
@@ -531,7 +532,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 // Revert UI state if API call fails
                 if (mounted) {
                   setState(() => bien.isFavorite = !isFav);
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  messenger?.showSnackBar(
                     const SnackBar(
                       content: Text('Impossible de modifier les favoris.'),
                       duration: Duration(seconds: 2),

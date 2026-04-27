@@ -6,7 +6,7 @@ L'app mobile HAP dispose maintenant d'un système complet de gestion des points 
 - **🗺️ Marqueurs distinctifs** par catégorie sur la carte
 - **🎨 Couleurs différentes** selon le type de POI (restaurant, pharmacie, parc, etc.)
 - **📸 Galerie de photos** pour chaque POI
-- **🔄 API de gestion** administrative pour ajouter/modifier/supprimer des POI
+- **🔄 API mobile** de consultation des points d'intérêt
 
 ---
 
@@ -73,9 +73,6 @@ CREATE TABLE poi_photos (
   ]
 }
 ```
-
-#### GET/POST/PUT/DELETE `/api/admin/admin_pois.php` - Gestion des POI
-Pour les administrateurs : créer, modifier, supprimer des POI
 
 ---
 
@@ -164,11 +161,7 @@ class PoiService {
 
 ### 6. Initialisation
 
-Les tables sont crées automatiquement via `/php_api/init_poi_tables.php` avec données d'exemple :
-- Pizzeria Mario (restaurant)
-- Pharmacie Centrale (pharmacy)
-- Jardin Public (parc)
-- Musée Local (museum)
+Les tables POI doivent être créées via le script SQL/procédure de base de données du projet.
 
 ---
 
@@ -190,12 +183,8 @@ Les tables sont crées automatiquement via `/php_api/init_poi_tables.php` avec d
 
 ## Fichiers Modifiés/Créés
 
-### Base de Données
-- ✅ `php_api/init_poi_tables.php` - Script d'initialisation
-
 ### API Mobile
 - ✅ `php_api/api/mobile/get_pois.php` - Récupérer les POI
-- ✅ `php_api/api/admin/admin_pois.php` - Gestion administrative
 
 ### Configuration
 - ✅ `lib/config/api_config.dart` - URL endpoint POI ajoutée

@@ -430,21 +430,27 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
   }
 
   Widget _buildSortOptions() {
-    return Column(
-      children: SortOption.values.map((option) {
-        return RadioListTile<SortOption>(
-          title: Text(
-            option.label,
-            style: const TextStyle(color: Colors.white70, fontSize: 14),
-          ),
-          value: option,
-          groupValue: _sort,
-          onChanged: (v) => setState(() => _sort = v!),
-          activeColor: _accent,
-          contentPadding: EdgeInsets.zero,
-          dense: true,
-        );
-      }).toList(),
+    return RadioGroup<SortOption>(
+      groupValue: _sort,
+      onChanged: (value) {
+        if (value != null) {
+          setState(() => _sort = value);
+        }
+      },
+      child: Column(
+        children: SortOption.values.map((option) {
+          return RadioListTile<SortOption>(
+            title: Text(
+              option.label,
+              style: const TextStyle(color: Colors.white70, fontSize: 14),
+            ),
+            value: option,
+            activeColor: _accent,
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+          );
+        }).toList(),
+      ),
     );
   }
 

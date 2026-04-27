@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+
+# Block technical/admin areas from indexing.
+Disallow: /php_api/api/admin/
+Disallow: /php_api/config/
+Disallow: /sql/
+Disallow: /build/
+
+# Keep crawl budget focused on user-facing pages.
+Disallow: /*?*
+
+Sitemap: /sitemap.xml

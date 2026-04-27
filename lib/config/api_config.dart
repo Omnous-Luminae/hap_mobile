@@ -2,7 +2,7 @@
 ///
 /// Par défaut, l'API pointe vers un serveur PHP local lancé sur le port 8080.
 /// Vous pouvez surcharger la base URL à l'exécution avec :
-///   flutter run --dart-define=API_BASE_URL=http://<host>:<port>
+///   flutter run --dart-define=API_BASE_URL=http://HOST:PORT
 library;
 
 import 'package:flutter/foundation.dart' show kIsWeb;

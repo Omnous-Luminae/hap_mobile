@@ -1,11 +1,11 @@
 {
-    "name": "hap_mobile",
-    "short_name": "hap_mobile",
+    "name": "HAP Mobile",
+    "short_name": "HAP",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#1a1a2e",
+    "theme_color": "#1a1a2e",
+    "description": "Recherchez, réservez et gérez vos locations sur HAP Mobile.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

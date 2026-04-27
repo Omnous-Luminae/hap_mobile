@@ -1,156 +1,98 @@
-1. Connexion à la base de données (PHP)
-1.1 Centralisation de la connexion PDO
-Objectif
-Centraliser la logique de connexion afin d'éviter la duplication des credentials, garantir la robustesse face aux changements et homogénéiser la gestion des erreurs. Éviter qu’un new PDO() soit instancié ailleurs que dans le fichier dédié.
+﻿# Fiche technique - HAP Mobile
 
-Fichier de référence : php_api/config/db.php
+## 1. Objet
+Cette fiche technique decrit l'architecture technique de HAP Mobile et ses interfaces backend.
 
-PHP
-// db.php - Configuration centralisée PDO
-if (!defined('DB_HOST')) {
-    define('DB_HOST', getenv('DB_HOST') ?: '127.0.0.1');
-}
-if (!defined('DB_NAME')) {
-    define('DB_NAME', getenv('DB_NAME') ?: 'project_hap');
-}
-if (!defined('DB_USER')) {
-    define('DB_USER', getenv('DB_USER') ?: 'root');
-}
-if (!defined('DB_PASS')) {
-    define('DB_PASS', getenv('DB_PASS') !== false ? getenv('DB_PASS') : '');
-}
+## 2. Stack technique
+- Frontend mobile: Flutter (Dart)
+- Gestion d'etat: provider (AuthProvider)
+- Navigation: go_router
+- HTTP: package http
+- Stockage local: shared_preferences
+- Cartographie: flutter_map, latlong2
+- UI media: cached_network_image, carousel_slider, shimmer
+- Notation: flutter_rating_bar
 
-/**
- * Retourne une connexion PDO unique (singleton).
- */
-function getPDO(): PDO {
-    static $pdo = null;
-    if ($pdo === null) {
-        try {
-            $pdo = new PDO(
-                'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8',
-                DB_USER,
-                DB_PASS,
-                [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
-            );
-        } catch (PDOException $e) {
-            http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'Erreur de connexion à la base de données.']);
-            exit;
-        }
-    }
-    return $pdo;
-}
-Points clés
+## 3. Architecture applicative
+### 3.1 Client Flutter
+- Point d'entree: lib/main.dart
+- Theme global et router centralises.
+- Ecran de demarrage pour verifier la session.
 
-Les credentials sont prioritairement lus depuis les variables d’environnement (sécurisé et compatible cloud/production).
-Connexion unique/mutualisée grâce au pattern singleton avec une variable static.
-Gestion centralisée de l’erreur par renvoi d’un code HTTP 500 et un message JSON.
-Exemple d’utilisation dans une API
+### 3.2 Services metier
+- ApiService: client HTTP central avec timeout et gestion 401.
+- AuthService: login/register/me/logout + persistance session.
+- BienService: listing pagine, recherche, filtres, suggestions.
+- ReservationService: detail bien, disponibilites, creation/annulation reservation.
+- FavorisService: gestion des favoris.
+- NotificationService: notifications applicatives locales basees sur reservations.
 
-PHP
-require_once __DIR__ . '/../../config/db.php';
-$pdo = getPDO();
-// $pdo réutilisable dans tout le script
-Bonne pratique : Les endpoints appellent toujours getPDO() pour obtenir l’accès à la BDD.
+### 3.3 Backend PHP
+- API mobile sous php_api/api/mobile.
+- Connexion BDD centralisee via php_api/config/db.php (PDO).
+- CORS centralise via php_api/config/cors.php.
+- JWT utilitaire via php_api/classes/JWTHelper.php.
 
-1.2 Robustesse et évolutivité
-En cas d’échec de connexion (mauvais identifiants, base down…), la fonction lève l’erreur de façon contrôlée (HTTP + JSON), ce qui permet aux API d'harmoniser leur gestion des pannes côté mobile.
-Les valeurs (root, project_hap) sont acceptées uniquement pour du développement local. À PROSCRIRE en production.
-Toute opération d’évolution du schéma (ex : migration du champ mot de passe) se fait via une fonction dédiée telle que hapEnsureAuthSchema(PDO $pdo) pour garantir la compatibilité descendante.
-2. Système de filtrage dynamique et typé (Flutter/Dart)
-2.1 Modélisation du filtre
-Classe dédiée : FilterOptions
-Centralise tous les critères de recherche disponibles pour les biens immobiliers.
+## 4. Endpoints techniques utilises
+### 4.1 Authentification
+- POST /php_api/api/mobile/auth_login.php
+- POST /php_api/api/mobile/auth_register.php
+- GET /php_api/api/mobile/auth_me.php
+- POST /php_api/api/mobile/auth_logout.php
 
-Fichier de référence : lib/models/filter_options.dart
+### 4.2 Biens et recherche
+- GET /php_api/api/mobile/get_biens_mobile.php
+- GET /php_api/api/mobile/get_bien_detail.php
+- GET /php_api/api/mobile/search_biens.php
+- GET /php_api/api/search_communes.php
 
-Dart
-class FilterOptions {
-  final int? communeId;
-  final int? typeBien;
-  final int? nbCouchageMin, nbCouchageMax;
-  final double? superficieMin, superficieMax;
-  final bool? animaux;
-  final double? prixMin, prixMax;
-  final double? noteMin;
-  final String? search; // recherche textuelle
-  final SortOption sort;
+### 4.3 Favoris / reservations / profil
+- GET|POST|DELETE /php_api/api/mobile/favoris.php
+- GET /php_api/api/mobile/get_disponibilites.php
+- POST /php_api/api/mobile/create_reservation.php
+- GET /php_api/api/mobile/get_mes_reservations.php
+- POST /php_api/api/mobile/cancel_reservation.php
+- POST /php_api/api/mobile/update_profile.php
 
-  // Constructeur principal et constructeur empty
-  const FilterOptions({...});
-  const FilterOptions.empty() : this();
+### 4.4 POI
+- GET /php_api/api/mobile/get_pois.php
 
-  // Renvoie un Map pour les query params API
-  Map<String, String> toQueryParams() {
-    final params = <String, String>{};
-    if (communeId != null) params['commune_id'] = communeId.toString();
-    if (typeBien != null) params['type_bien'] = typeBien.toString();
-    if (nbCouchageMin != null) params['nb_couchage_min'] = nbCouchageMin.toString();
-    if (nbCouchageMax != null) params['nb_couchage_max'] = nbCouchageMax.toString();
-    if (superficieMin != null) params['superficie_min'] = superficieMin!.toStringAsFixed(0);
-    if (superficieMax != null) params['superficie_max'] = superficieMax!.toStringAsFixed(0);
-    if (animaux != null) params['animaux'] = animaux! ? '1' : '0';
-    if (prixMin != null) params['prix_min'] = prixMin!.toStringAsFixed(0);
-    if (prixMax != null) params['prix_max'] = prixMax!.toStringAsFixed(0);
-    if (noteMin != null) params['note_min'] = noteMin!.toStringAsFixed(1);
-    if (search != null && search!.isNotEmpty) params['search'] = search!;
-    params['sort'] = sort.apiValue;
-    return params;
-  }
+## 5. Modele de securite
+- Authentification par token JWT (header Authorization: Bearer).
+- Nettoyage session locale sur reponse 401.
+- Requetes SQL backend principalement executees en requetes preparees PDO.
+- Pas de module admin expose dans l'application mobile.
 
-  // Copie immutable
-  FilterOptions copyWith({...});
-}
-Chaque champ nullable signifie "filtre inactif" pour ce critère.
-L'export du filtre en paramètres d’URL pour l’API s’effectue dans toQueryParams(), centralisant toute la logique métier liée aux filtres (évite leur duplication dans l’UI ou les services).
-2.2 Application et modification
-Widget pour la sélection : FilterBottomSheet
+## 6. Persistance locale
+- Cle auth_token: token JWT courant.
+- Cle auth_user: profil utilisateur serialize.
+- Preferences UX: layout compact, notifications activees, etc.
+- Cache notifications: notifications generees localement et stockees.
 
-Ouvre un panneau modal avec tous les filtres (type, prix, superficie, animaux, etc).
-Passe par FilterOptions.copyWith() pour générer la nouvelle configuration de filtre sans mutation.
-Indique le nombre de filtres actifs via un badge ("3 actifs") :
-Dart
-int get activeCount {
-  int count = 0;
-  if (typeBien != null) count++;
-  if (prixMin != null || prixMax != null) count++;
-  if (nbCouchageMin != null) count++;
-  if (animaux == true) count++;
-  if (superficieMin != null || superficieMax != null) count++;
-  if (noteMin != null) count++;
-  if (communeId != null) count++;
-  return count;
-}
-Voir :
+## 7. Performance et robustesse
+- Timeout reseau centralise a 20 secondes.
+- Pagination cote biens (page/per_page).
+- Chargement progressif (infinite scroll) sur la liste de biens.
+- Pull-to-refresh sur les vues principales.
+- Etats UI explicites: loading, erreur, vide.
 
-lib/widgets/filter_bottom_sheet.dart
-lib/widgets/search_bar_widget.dart
-2.3 Envoi vers l’API et découpage côté serveur
-Lorsque l'utilisateur applique un ou plusieurs filtres, ceux-ci sont encapsulés et transférés :
+## 8. Compatibilite et execution
+- Android, iOS, Web, Desktop (structure Flutter multi-plateforme).
+- URL API adaptable via --dart-define=API_BASE_URL.
+- Valeur locale par defaut adaptee emulateur Android (10.0.2.2).
 
-Via l’URL en GET, ex : GET /api/biens?prix_max=500&page=2
-Les query params sont générés par la méthode toQueryParams() (aucun param inutile si le filtre est inactif).
-Service de récupération :
+## 9. Contraintes et exclusions
+- L'administration et la moderation ne font pas partie du client mobile.
+- Les scripts SQL/debug internes ne sont pas des composants applicatifs mobile.
+- Les routes exposees par le router Flutter sont limitees a:
+  - /
+  - /login
+  - /register
+  - /home
+  - /notifications
+  - /bien/:id
 
-Dart
-static Future<Map<String, dynamic>> getBiens({
-  FilterOptions? filters, int page = 1, int perPage = 10,
-}) async {
-  final params = <String, String>{
-    'page': page.toString(),
-    'per_page': perPage.toString(),
-  };
-  if (filters != null) params.addAll(filters.toQueryParams());
-  final response = await ApiService.get(ApiConfig.biens, params: params);
-  ...
-}
-(Réf : lib/services/bien_service.dart)
-
-3. Bonnes pratiques et sécurité
-AUCUN new PDO() ailleurs que dans db.php. Usage exclusif de getPDO() dans toutes les API.
-Toutes les informations sensibles (identifiants BDD) isolées en variables d'environnement, jamais dans le code source ni versionnées.
-Logique de filtrage (suppression des filtres à valeur par défaut...) centralisée dans le modèle, non dans l’UI ou les widgets pour favoriser la maintenabilité.
-Récapitulatif d'usage
-Backend PHP : Connexion unique maintenue, sécurisée, réutilisable et résiliente via getPDO()
-Frontend Dart : Système de filtres typé immuable, facilement ajustable, exportable automatiquement vers les requêtes API, via une seule classe métier dédiée.
+## 10. Recommandations techniques
+- Externaliser JWT_SECRET en variable d'environnement serveur.
+- Ajouter verification blacklist JWT a la validation des tokens si logout serveur exige.
+- Conserver l'interdiction d'endpoints admin dans le scope mobile.
