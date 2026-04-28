@@ -1,33 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <!--
-    IMPORTANT:
-    Replace https://example.com with your production domain during deployment.
-    Dynamic routes like /bien/:id should be generated server-side and added here.
-  -->
+  <!-- Routes statiques exposées par GoRouter dans lib/main.dart -->
   <url>
-    <loc>https://example.com/</loc>
+    <loc>http://localhost/</loc>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://example.com/login</loc>
+    <loc>http://localhost/login</loc>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://example.com/register</loc>
+    <loc>http://localhost/register</loc>
     <changefreq>monthly</changefreq>
     <priority>0.4</priority>
   </url>
   <url>
-    <loc>https://example.com/home</loc>
+    <loc>http://localhost/home</loc>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://example.com/notifications</loc>
+    <loc>http://localhost/notifications</loc>
     <changefreq>weekly</changefreq>
     <priority>0.4</priority>
   </url>
+  <!-- Route dynamique : /bien/:id. Les URLs exactes doivent être générées avec des IDs réels. -->
 </urlset>
